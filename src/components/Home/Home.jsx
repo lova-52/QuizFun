@@ -10,13 +10,13 @@ const Home = () => {
 
   return (
     <>
-      <Navbar />
+      <Navbar onLoginClick={() => setShowLogin(true)}/>
       <Hero />
       <button onClick={() => setShowLogin(true)} className="btn">Đăng nhasdập</button>
       <LoginModal
         isOpen={showLogin}
         onClose={() => setShowLogin(false)}
-        onSwitch={() => setShowLogin(false)}
+        onSwitch={() => setShowLogin(false)} //or showRegister()
       />
       <Footer />
     </>
