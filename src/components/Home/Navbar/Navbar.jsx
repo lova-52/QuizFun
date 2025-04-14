@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Navbar = ({ onLoginClick }) => {
+const Navbar = ({ onLoginClick, onRegisterClick}) => {
   return (
     <header className="bg-white shadow-md sticky top-0 z-50"> 
       <div className="container mx-auto px-4 max-w-7xl">
@@ -25,17 +25,16 @@ const Navbar = ({ onLoginClick }) => {
 
           <div className="flex items-center space-x-4">
             {/* Dùng callback onLoginClick */}
-            <button onClick={onLoginClick} className="hidden md:block font-medium text-primary hover:text-darkPrimary transition-colors">
+            <button id="loginBtn" onClick={onLoginClick} className="hidden md:block font-medium text-primary hover:text-darkPrimary transition-colors">
               Đăng nhập
             </button>
 
-            {/* Tạm để nút Đăng ký này chưa gắn gì */}
-            <a href="#" className="bg-primary hover:bg-darkPrimary text-white px-5 py-2 rounded-full font-medium transition-colors flex items-center">
+            <button onClick={onRegisterClick} className="bg-primary hover:bg-darkPrimary text-white px-5 py-2 rounded-full font-medium transition-colors flex items-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="..." />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
               </svg>
               Đăng ký
-            </a>
+            </button>
 
             <button className="md:hidden text-gray-500 hover:text-primary">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
