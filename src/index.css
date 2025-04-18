@@ -1,3 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+}
+
+.float {
+    animation: float 3s ease-in-out infinite;
+}
+
+.quiz-card-hover:hover .quiz-overlay {
+    opacity: 1;
+}
+
+.gradient-text {
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    background-image: linear-gradient(to right, #3d5af1, #00d4ff);
+}
+
+.modal {
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    opacity: 0;
+    visibility: hidden;
+}
+
+.modal-content {
+    transition: transform 0.3s ease;
+    transform: translateY(20px);
+}
+
+.modal.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal.active .modal-content {
+    transform: translateY(0);
+}
+
