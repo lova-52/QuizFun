@@ -37,7 +37,7 @@ function QuizCard({ id, title, image, description, difficulty, questionCount, co
               to={`/quiz/${id}`} 
               className="bg-primary hover:bg-darkPrimary text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center"
             >
-              Bắt đầu làm bài
+              Xem chi tiết
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7-7 7" />
               </svg>
