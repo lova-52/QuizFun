@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
 import Home from './components/Home/Home';
 import Quizzes from './components/Pages/QuizList/Quizzes';
 import CategoriesPage from './components/Pages/CategoryList/CategoriesPage';
@@ -7,7 +8,10 @@ import QuizzDetail from './components/Pages/QuizzDetail';
 import QuizzTake from './components/Pages/QuizzTake';
 import QuizResult from './components/Pages/QuizResult'; // Import component mới
 
+
 const App = () => {
+
+
   return (
     <Router>
       <Routes>
