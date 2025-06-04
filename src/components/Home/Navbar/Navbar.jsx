@@ -1,30 +1,38 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
+import { AuthContext } from '../../../context/AuthContext';
 
-const Navbar = ({ onLoginClick, onRegisterClick, user, onLogout }) => {
+const Navbar = ({ onLoginClick, onRegisterClick }) => {
+  // Lấy user từ AuthContext
+  const { user, logout } = useContext(AuthContext);
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const dropdownRef = useRef(null); // Reference cho dropdown menu để kiểm tra click bên ngoài
 
+  // Toggle cho menu mobile (hamburger menu)
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
+  // Toggle cho dropdown của user (sau khi login)
   const toggleUserDropdown = () => {
     setUserDropdownOpen(!userDropdownOpen);
   };
 
+  // Scroll lên đầu trang mỗi khi menu được click
   const handleNavClick = () => {
     window.scrollTo(0, 0);
     setMobileMenuOpen(false);
   };
 
+  // Logout user
   const handleLogout = () => {
-    onLogout();
-    setUserDropdownOpen(false);
+    logout(); // gọi hàm logout từ AuthContext để reset state
+    setUserDropdownOpen(false); // Đóng dropdown sau khi logout
   };
 
-  // Đóng dropdown khi click bên ngoài
+  // Đóng dropdown khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -32,9 +40,9 @@ const Navbar = ({ onLoginClick, onRegisterClick, user, onLogout }) => {
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside); // Bắt sự kiện click ngoài
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside); // Dọn dẹp khi component unmount
     };
   }, []);
 
@@ -45,6 +53,7 @@ const Navbar = ({ onLoginClick, onRegisterClick, user, onLogout }) => {
           <div className="flex justify-between items-center py-4">
             <Link to="/" onClick={handleNavClick} className="flex items-center space-x-2">
               <div className="w-10 h-10 bg-gradient-to-r from-primary to-accent rounded-lg flex items-center justify-center">
+                {/* Logo */}
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
@@ -62,13 +71,13 @@ const Navbar = ({ onLoginClick, onRegisterClick, user, onLogout }) => {
               <Link to="/about" onClick={handleNavClick} className="font-medium hover:text-primary transition-colors border-b-2 border-transparent hover:border-primary pb-1">Về chúng tôi</Link>
             </nav>
             
-            {/* Auth Section */}
+            {/* Auth Section - Đăng nhập/Đăng ký hoặc Menu User */}
             <div className="flex items-center space-x-4">
               {user ? (
-                // User logged in - show user menu
+                // Nếu user đã đăng nhập - hiển thị menu user
                 <div className="relative" ref={dropdownRef}>
                   <button 
-                    onClick={toggleUserDropdown}
+                    onClick={toggleUserDropdown} // Hiển thị/hide dropdown
                     className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 rounded-full px-4 py-2 transition-colors"
                   >
                     <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
@@ -77,7 +86,7 @@ const Navbar = ({ onLoginClick, onRegisterClick, user, onLogout }) => {
                       </span>
                     </div>
                     <span className="font-medium text-gray-700 hidden md:block">
-                      {user.name || user.email.split('@')[0]}
+                      {user.name || user.email.split('@')[0]} {/* Hiển thị tên hoặc email user */}
                     </span>
                     <svg 
                       xmlns="http://www.w3.org/2000/svg" 
@@ -90,22 +99,20 @@ const Navbar = ({ onLoginClick, onRegisterClick, user, onLogout }) => {
                     </svg>
                   </button>
 
-                  {/* User Dropdown Menu */}
+                  {/* Dropdown menu user */}
                   {userDropdownOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                       <div className="px-4 py-2 border-b border-gray-100">
                         <p className="text-sm font-medium text-gray-800">
-                          {user.name || 'Người dùng'}
+                          {user.name || 'Người dùng'} {/* Hiển thị tên user */}
                         </p>
-                        <p className="text-sm text-gray-500">{user.email}</p>
+                        <p className="text-sm text-gray-500">{user.email}</p> {/* Hiển thị email */}
                       </div>
                       
+                      {/* Các menu item */}
                       <Link 
                         to="/profile" 
-                        onClick={() => {
-                          handleNavClick();
-                          setUserDropdownOpen(false);
-                        }}
+                        onClick={() => { handleNavClick(); setUserDropdownOpen(false); }}
                         className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -116,10 +123,7 @@ const Navbar = ({ onLoginClick, onRegisterClick, user, onLogout }) => {
                       
                       <Link 
                         to="/my-quizzes" 
-                        onClick={() => {
-                          handleNavClick();
-                          setUserDropdownOpen(false);
-                        }}
+                        onClick={() => { handleNavClick(); setUserDropdownOpen(false); }}
                         className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -143,7 +147,7 @@ const Navbar = ({ onLoginClick, onRegisterClick, user, onLogout }) => {
                   )}
                 </div>
               ) : (
-                // User not logged in - show login/register buttons
+                // Nếu user chưa đăng nhập
                 <>
                   <button onClick={onLoginClick} className="hidden md:block font-medium text-primary hover:text-darkPrimary transition-colors">Đăng nhập</button>
                   <button onClick={onRegisterClick} className="bg-primary hover:bg-darkPrimary text-white px-5 py-2 rounded-full font-medium transition-colors flex items-center">
@@ -154,14 +158,14 @@ const Navbar = ({ onLoginClick, onRegisterClick, user, onLogout }) => {
                   </button>
                 </>
               )}
-              
-              {/* Mobile Menu Button */}
-              <button onClick={toggleMobileMenu} className="md:hidden text-gray-500 hover:text-primary">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
             </div>
+
+            {/* Mobile Menu Button */}
+            <button onClick={toggleMobileMenu} className="md:hidden text-gray-500 hover:text-primary">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
           </div>
         </div>
       </header>
