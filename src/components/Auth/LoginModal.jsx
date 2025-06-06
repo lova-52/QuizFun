@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function LoginModal({ isOpen, onClose, onSwitch }) {
   const [email, setEmail] = useState('');
@@ -22,14 +22,36 @@ export default function LoginModal({ isOpen, onClose, onSwitch }) {
       alert('Đăng nhập thành công!');
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
-      onClose();
+      onClose(); // Đóng modal khi đăng nhập thành công
     } else {
       alert(data.message || 'Đăng nhập thất bại!');
     }
   };
 
+  // Đóng modal khi nhấn bên ngoài hoặc nhấn phím Escape
+  useEffect(() => {
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        onClose();  // Đóng modal nếu nhấn Escape
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+    } else {
+      document.removeEventListener('keydown', handleEscape);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isOpen, onClose]);
+
   return (
-    <div className={`modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center ${isOpen ? 'active' : ''}`}>
+    <div
+      className={`modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center ${isOpen ? 'active' : ''}`}
+      onClick={(e) => e.target === e.currentTarget && onClose()} // Đóng modal khi click bên ngoài
+    >
       <div className="modal-content bg-white rounded-2xl shadow-xl w-full max-w-md mx-4">
         <div className="p-6">
           {/* Header */}
@@ -37,7 +59,9 @@ export default function LoginModal({ isOpen, onClose, onSwitch }) {
             <h2 className="text-2xl font-bold">
               <span className="text-primary">Quiz</span><span className="text-secondary">Fun</span>
             </h2>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">{/* icon close */}</button>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+              {/* icon close */}
+            </button>
           </div>
 
           {/* Form */}
