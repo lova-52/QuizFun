@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { AuthContext } from '../../context/AuthContext';
 
 export default function LoginModal({ isOpen, onClose, onSwitch }) {
+  const { login } = React.useContext(AuthContext);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -22,6 +24,7 @@ export default function LoginModal({ isOpen, onClose, onSwitch }) {
       alert('Đăng nhập thành công!');
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
+      login(data.user, data.token); // Cập nhật context với user và token
       onClose(); // Đóng modal khi đăng nhập thành công
     } else {
       alert(data.message || 'Đăng nhập thất bại!');
