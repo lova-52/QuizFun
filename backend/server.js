@@ -4,9 +4,14 @@ import bodyParser from 'body-parser';
 import bcrypt from 'bcrypt';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
+
 dotenv.config();
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+// Kết nối Supabase (thông tin từ file .env)
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 const app = express();
 app.use(cors());
@@ -50,10 +55,7 @@ app.get('/api/categories', async (req, res) => {
       };
     }));
 
-    return res.json({
-      success: true,
-      data: formattedCategories
-    });
+    return res.json({ success: true, data: formattedCategories });
   } catch (error) {
     console.error('Lỗi không mong muốn:', error);
     return res.status(500).json({ message: 'Lỗi server' });
@@ -157,12 +159,33 @@ app.get('/api/popular-quizzes', async (req, res) => {
 });
 
 // Đăng ký
+// API lấy danh sách users (CHO ADMIN) - LONG THÊM MỚI
+app.get('/api/users', async (req, res) => {
+  try {
+    const { data: users, error } = await supabase
+      .from('user')
+      .select('id, name, email, role, created_at');
+
+    if (error) {
+      console.error('Lỗi khi lấy user:', error);
+      return res.status(500).json({ message: 'Lỗi server khi lấy user' });
+    }
+
+    res.json({ success: true, users });
+  } catch (err) {
+    console.error('Lỗi server không mong muốn:', err);
+    res.status(500).json({ message: 'Lỗi server không mong muốn' });
+  }
+});
+
+// Đăng ký user mới
 app.post('/api/register', async (req, res) => {
   const { name, email, password } = req.body;
 
   if (!name || !email || !password)
     return res.status(400).json({ message: 'Vui lòng nhập đầy đủ thông tin' });
 
+  // Kiểm tra email đã tồn tại chưa
   const { data: existingUsers, error: queryError } = await supabase
     .from('user')
     .select('id')
@@ -175,14 +198,17 @@ app.post('/api/register', async (req, res) => {
 
   const password_hash = await bcrypt.hash(password, 10);
 
-  const { data: newUser, error: insertError } = await supabase
+  // Insert user mới vào DB
+  const { error: insertError } = await supabase
     .from('user')
     .insert([{ name, email, password_hash, role: 'user' }]);
 
-  if (insertError) return res.status(500).json({ message: 'Không thể tạo tài khoản' });
+  if (insertError)
+    return res.status(500).json({ message: 'Không thể tạo tài khoản' });
 
   return res.status(201).json({ message: 'Đăng ký thành công!' });
 });
+
 
 // Đăng nhập
 app.post('/api/login', async (req, res) => {
@@ -205,6 +231,8 @@ app.post('/api/login', async (req, res) => {
   const isValidPassword = await bcrypt.compare(password, user.password_hash || '');
   if (!isValidPassword)
     return res.status(401).json({ message: 'Email hoặc mật khẩu không đúng' });
+
+  // TODO: Tạo JWT token thực sự (hiện tại tạm dùng token giả)
 
   const token = 'fake-jwt-token';
 

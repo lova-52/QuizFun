@@ -7,6 +7,8 @@ import CategoriesPage from './components/Pages/CategoryList/CategoriesPage';
 import QuizzDetail from './components/Pages/QuizzDetail';
 import QuizzTake from './components/Pages/QuizzTake';
 import QuizResult from './components/Pages/QuizResult';
+import UserList from './components/Pages/Admin/UserList';
+
 
 import { AuthProvider } from './context/AuthContext';
 
@@ -21,6 +23,8 @@ const App = () => {
           <Route path="/quiz/:quizId" element={<QuizzDetail />} />
           <Route path="/quiz/:quizId/take" element={<QuizzTake />} />
           <Route path="/quiz/:quizId/result" element={<QuizResult />} />
+          <Route path="/admin/users" element={<UserList />} />
+          {/* Add more routes as needed */} 
         </Routes>
       </Router>
     </AuthProvider>
@@ -28,3 +32,4 @@ const App = () => {
 };
 
 export default App;
+
