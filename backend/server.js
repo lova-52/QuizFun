@@ -32,7 +32,6 @@ app.get('/api/categories', async (req, res) => {
       return res.status(500).json({ message: 'Lỗi server khi lấy danh mục' });
     }
 
-    // Chuyển đổi dữ liệu và tạo URL đầy đủ cho image
     const formattedCategories = await Promise.all(categories.map(async (category) => {
       let imageUrl = null;
       if (category.image_url) {
@@ -46,7 +45,7 @@ app.get('/api/categories', async (req, res) => {
         id: category.id.toString(),
         title: category.name,
         description: category.description,
-        image: imageUrl, // URL đầy đủ hoặc null
+        image: imageUrl,
         quizCount: `${category.total_quizzes || 0}+ Quiz`
       };
     }));
@@ -61,6 +60,102 @@ app.get('/api/categories', async (req, res) => {
   }
 });
 
+// Lấy danh sách quizzes theo categoryId
+app.get('/api/quizzes', async (req, res) => {
+  try {
+    const { categoryId } = req.query; // Lấy categoryId từ query parameter
+
+    if (!categoryId) {
+      return res.status(400).json({ success: false, message: 'categoryId is required' });
+    }
+
+    const { data: quizzes, error } = await supabase
+      .from('quizzes')
+      .select('*')
+      .eq('category_id', categoryId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Lỗi khi lấy quizzes:', error);
+      return res.status(500).json({ message: 'Lỗi server khi lấy danh sách quizzes' });
+    }
+
+    const formattedQuizzes = await Promise.all(quizzes.map(async (quiz) => {
+      let imageUrl = null;
+      if (quiz.image_url) {
+        const { data } = supabase.storage
+          .from('project-bucket')
+          .getPublicUrl(quiz.image_url);
+        imageUrl = data.publicUrl;
+      }
+
+      return {
+        id: quiz.id.toString(),
+        categoryId: quiz.category_id.toString(),
+        title: quiz.title,
+        description: quiz.description,
+        image: imageUrl,
+        questionCount: quiz.total_questions || 0,
+        completions: quiz.play_count || 0,
+        createdAt: quiz.created_at,
+      };
+    }));
+
+    return res.json({
+      success: true,
+      data: formattedQuizzes,
+    });
+  } catch (error) {
+    console.error('Lỗi không mong muốn:', error);
+    return res.status(500).json({ message: 'Lỗi server' });
+  }
+});
+
+// Lấy top 6 quizzes phổ biến dựa trên play_count
+app.get('/api/popular-quizzes', async (req, res) => {
+  try {
+    const { data: quizzes, error } = await supabase
+      .from('quizzes')
+      .select('*')
+      .order('play_count', { ascending: false }) // Sắp xếp theo play_count giảm dần
+      .limit(6); // Lấy top 6
+
+    if (error) {
+      console.error('Lỗi khi lấy popular quizzes:', error);
+      return res.status(500).json({ message: 'Lỗi server khi lấy danh sách quizzes phổ biến' });
+    }
+
+    const formattedQuizzes = await Promise.all(quizzes.map(async (quiz) => {
+      let imageUrl = null;
+      if (quiz.image_url) {
+        const { data } = supabase.storage
+          .from('project-bucket')
+          .getPublicUrl(quiz.image_url);
+        imageUrl = data.publicUrl;
+      }
+
+      return {
+        id: quiz.id.toString(),
+        categoryId: quiz.category_id.toString(),
+        title: quiz.title,
+        description: quiz.description,
+        image: imageUrl,
+        questionCount: quiz.total_questions || 0,
+        completions: quiz.play_count || 0,
+        createdAt: quiz.created_at,
+      };
+    }));
+
+    return res.json({
+      success: true,
+      data: formattedQuizzes,
+    });
+  } catch (error) {
+    console.error('Lỗi không mong muốn:', error);
+    return res.status(500).json({ message: 'Lỗi server' });
+  }
+});
+
 // Đăng ký
 app.post('/api/register', async (req, res) => {
   const { name, email, password } = req.body;
@@ -68,7 +163,6 @@ app.post('/api/register', async (req, res) => {
   if (!name || !email || !password)
     return res.status(400).json({ message: 'Vui lòng nhập đầy đủ thông tin' });
 
-  // Kiểm tra tồn tại email
   const { data: existingUsers, error: queryError } = await supabase
     .from('user')
     .select('id')
@@ -79,10 +173,8 @@ app.post('/api/register', async (req, res) => {
   if (existingUsers.length > 0)
     return res.status(409).json({ message: 'Email đã được sử dụng' });
 
-  // Hash mật khẩu
   const password_hash = await bcrypt.hash(password, 10);
 
-  // Thêm user
   const { data: newUser, error: insertError } = await supabase
     .from('user')
     .insert([{ name, email, password_hash, role: 'user' }]);
@@ -114,7 +206,6 @@ app.post('/api/login', async (req, res) => {
   if (!isValidPassword)
     return res.status(401).json({ message: 'Email hoặc mật khẩu không đúng' });
 
-  // TODO: Tạo JWT token thực sự (hiện tạm token giả)
   const token = 'fake-jwt-token';
 
   return res.json({
