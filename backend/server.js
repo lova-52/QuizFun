@@ -19,6 +19,48 @@ app.get('/', (req, res) => {
   res.send('Hello from backend!');
 });
 
+// Lấy danh sách categories
+app.get('/api/categories', async (req, res) => {
+  try {
+    const { data: categories, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('name', { ascending: true });
+
+    if (error) {
+      console.error('Lỗi khi lấy categories:', error);
+      return res.status(500).json({ message: 'Lỗi server khi lấy danh mục' });
+    }
+
+    // Chuyển đổi dữ liệu và tạo URL đầy đủ cho image
+    const formattedCategories = await Promise.all(categories.map(async (category) => {
+      let imageUrl = null;
+      if (category.image_url) {
+        const { data } = supabase.storage
+          .from('project-bucket')
+          .getPublicUrl(category.image_url);
+        imageUrl = data.publicUrl;
+      }
+
+      return {
+        id: category.id.toString(),
+        title: category.name,
+        description: category.description,
+        image: imageUrl, // URL đầy đủ hoặc null
+        quizCount: `${category.total_quizzes || 0}+ Quiz`
+      };
+    }));
+
+    return res.json({
+      success: true,
+      data: formattedCategories
+    });
+  } catch (error) {
+    console.error('Lỗi không mong muốn:', error);
+    return res.status(500).json({ message: 'Lỗi server' });
+  }
+});
+
 // Đăng ký
 app.post('/api/register', async (req, res) => {
   const { name, email, password } = req.body;

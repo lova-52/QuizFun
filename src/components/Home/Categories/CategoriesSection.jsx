@@ -1,38 +1,66 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import CategoryCard from './CategoryCard';
 
 function CategoriesSection() {
-  const categories = [
-    {
-      id: "1",
-      title: "Tính cách",
-      description: "Khám phá những điều thú vị về tính cách của bạn",
-      image: "https://images.careerviet.vn/content/images/tinh-cach-la-gi-careerbuilder-5.png",
-      quizCount: "150+ Quiz",
-    },
-    {
-      id: "2",
-      title: "Sở thích",
-      description: "Tìm hiểu sở thích phù hợp với bạn",
-      image: "https://goga.ai/wp-content/uploads/2022/10/gioi-thieu-so-thich-bang-tieng-anh-4-1.png",
-      quizCount: "120+ Quiz",
-    },
-    {
-      id: "3",
-      title: "Giải trí",
-      description: "Thư giãn với những câu đố vui nhộn",
-      image: "https://etimg.etb2bimg.com/photo/81478822.cms",
-      quizCount: "180+ Quiz",
-    },
-    {
-      id: "4",
-      title: "Học tập",
-      description: "Kiểm tra kiến thức với các bài thi thử",
-      image: "https://dhannd.edu.vn/image/cache/catalog/00_hinh_anh/p_6/210630_1.bia-900x600.jpeg",
-      quizCount: "200+ Quiz",
-    }
-  ];
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch categories từ API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:5000/api/categories');
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          setCategories(result.data);
+        } else {
+          throw new Error('Không thể lấy dữ liệu categories');
+        }
+      } catch (err) {
+        console.error('Lỗi khi fetch categories:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  // Hiển thị loading state
+  if (loading) {
+    return (
+      <section className="mb-16">
+        <div className="container mx-auto px-4 max-w-7xl">
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Hiển thị error state
+  if (error) {
+    return (
+      <section className="mb-16">
+        <div className="container mx-auto px-4 max-w-7xl">
+          <div className="text-center text-red-600">
+            <p>Lỗi: {error}</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="mb-16">
