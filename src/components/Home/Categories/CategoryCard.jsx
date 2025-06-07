@@ -6,7 +6,17 @@ function CategoryCard({ id, title, description, image, quizCount }) {
     <div className="group relative bg-white rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black opacity-60 z-10"></div>
       <div className="h-52 bg-gray-100 overflow-hidden">
-        <img src={image} alt={title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+        {image ? (
+          <img
+            src={image}
+            alt={title}
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gray-200">
+            <span className="text-gray-500 text-sm">No image</span>
+          </div>
+        )}
       </div>
       <div className="absolute bottom-0 left-0 right-0 p-6 z-20 text-white">
         <div className="bg-primary text-white text-xs font-bold px-2 py-1 rounded-full inline-block mb-2 opacity-90">{quizCount}</div>
