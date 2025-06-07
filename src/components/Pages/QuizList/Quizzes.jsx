@@ -12,12 +12,10 @@ function CategoryQuizzes() {
   const [filteredQuizzes, setFilteredQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Filter states
-  const [selectedDifficulty, setSelectedDifficulty] = useState('all');
+  // Filter state
   const [selectedSort, setSelectedSort] = useState('popular');
 
-  // Sort và filter options
-  const difficulties = ['Dễ', 'Trung bình', 'Khó'];
+  // Sort options
   const sortOptions = [
     { value: 'popular', label: 'Phổ biến nhất' },
     { value: 'newest', label: 'Mới nhất' },
@@ -26,126 +24,46 @@ function CategoryQuizzes() {
     { value: 'z-a', label: 'Tên Z-A' },
   ];
 
-  // Mock data 
+  // Fetch category và quizzes từ API
   useEffect(() => {
-    const mockCategories = [
-      {
-        id: "1",
-        title: "Tính cách",
-        description: "Khám phá những điều thú vị về tính cách của bạn",
-        image: "https://images.careerviet.vn/content/images/tinh-cach-la-gi-careerbuilder-5.png",
-      },
-      {
-        id: "2",
-        title: "Sở thích",
-        description: "Tìm hiểu sở thích phù hợp với bạn",
-        image: "https://goga.ai/wp-content/uploads/2022/10/gioi-thieu-so-thich-bang-tieng-anh-4-1.png",
-      },
-      {
-        id: "3",
-        title: "Giải trí",
-        description: "Thư giãn với những câu đố vui nhộn",
-        image: "https://etimg.etb2bimg.com/photo/81478822.cms",
-      },
-      {
-        id: "4",
-        title: "Học tập",
-        description: "Kiểm tra kiến thức với các bài thi thử",
-        image: "https://dhannd.edu.vn/image/cache/catalog/00_hinh_anh/p_6/210630_1.bia-900x600.jpeg",
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+
+        // Lấy thông tin category
+        const categoryResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/categories`);
+        if (!categoryResponse.ok) throw new Error(`HTTP error! status: ${categoryResponse.status}`);
+        const categoryResult = await categoryResponse.json();
+        if (categoryResult.success) {
+          const foundCategory = categoryResult.data.find(cat => cat.id === categoryId);
+          setCategory(foundCategory || null);
+        } else {
+          throw new Error('Không thể lấy dữ liệu categories');
+        }
+
+        // Lấy danh sách quizzes theo categoryId
+        const quizzesResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/quizzes?categoryId=${categoryId}`);
+        if (!quizzesResponse.ok) throw new Error(`HTTP error! status: ${quizzesResponse.status}`);
+        const quizzesResult = await quizzesResponse.json();
+        if (quizzesResult.success) {
+          setQuizzes(quizzesResult.data);
+          setFilteredQuizzes(quizzesResult.data);
+        } else {
+          throw new Error('Không thể lấy dữ liệu quizzes');
+        }
+      } catch (err) {
+        console.error('Lỗi khi fetch dữ liệu:', err);
+      } finally {
+        setLoading(false);
       }
-    ];
+    };
 
-    const mockQuizzes = [
-      {
-        id: '1',
-        categoryId: '1',
-        title: 'Bạn thuộc nhóm tính cách nào?',
-        description: 'Khám phá bạn thuộc nhóm tính cách MBTI nào qua 20 câu hỏi đơn giản',
-        image: 'https://www.verywellmind.com/thmb/uwCfX7jYs3W2U5lc6S5vJ25XPCY=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/2795284-00-MBTI-typing-system-and-the-types_V1-c7d2798146ae4f2cbe0fb767118eb89e.jpg',
-        difficulty: 'Dễ',
-        questionCount: 20,
-        completions: 15240,
-        createdAt: '2023-09-15'
-      },
-      {
-        id: '2',
-        categoryId: '1',
-        title: 'Phong cách làm việc của bạn',
-        description: 'Tìm hiểu phong cách làm việc và cách phối hợp với đồng nghiệp hiệu quả',
-        image: 'https://www.ntaskmanager.com/wp-content/uploads/2019/07/3.png',
-        difficulty: 'Trung bình',
-        questionCount: 15,
-        completions: 8920,
-        createdAt: '2023-10-02'
-      },
-      {
-        id: '3',
-        categoryId: '1',
-        title: 'Khám phá điểm mạnh tiềm ẩn',
-        description: 'Tìm ra những điểm mạnh tiềm ẩn mà bạn có thể chưa nhận ra về bản thân',
-        image: 'https://cdn.pixabay.com/photo/2022/01/11/21/48/light-bulb-6931911_1280.jpg',
-        difficulty: 'Khó',
-        questionCount: 25,
-        completions: 6450,
-        createdAt: '2023-11-10'
-      },
-      {
-        id: '4',
-        categoryId: '1',
-        title: 'Bạn xử lý stress như thế nào?',
-        description: 'Hiểu rõ cách bạn phản ứng với stress và áp lực trong cuộc sống',
-        image: 'https://cdn.pixabay.com/photo/2020/11/08/11/22/man-5723449_1280.jpg',
-        difficulty: 'Trung bình',
-        questionCount: 18,
-        completions: 10320,
-        createdAt: '2023-12-05'
-      },
-      {
-        id: '5',
-        categoryId: '1',
-        title: 'Phong cách giao tiếp của bạn',
-        description: 'Tìm hiểu cách bạn giao tiếp và tương tác với người khác',
-        image: 'https://cdn.pixabay.com/photo/2019/11/04/10/11/network-4600870_1280.jpg',
-        difficulty: 'Dễ',
-        questionCount: 15,
-        completions: 9750,
-        createdAt: '2024-01-20'
-      },
-      {
-        id: '6',
-        categoryId: '1',
-        title: 'Chỉ số EQ của bạn',
-        description: 'Đánh giá chỉ số cảm xúc và khả năng đồng cảm của bạn',
-        image: 'https://cdn.pixabay.com/photo/2018/03/09/08/05/woman-3210837_1280.jpg',
-        difficulty: 'Khó',
-        questionCount: 30,
-        completions: 7680,
-        createdAt: '2024-02-15'
-      },
-    ];
-
-    setTimeout(() => {
-      // Tìm thông tin category dựa trên categoryId
-      const foundCategory = mockCategories.find(cat => cat.id === categoryId);
-      setCategory(foundCategory);
-
-      // Lọc danh sách quiz theo categoryId
-      const categoryQuizzes = mockQuizzes.filter(quiz => quiz.categoryId === categoryId);
-      setQuizzes(categoryQuizzes);
-      setFilteredQuizzes(categoryQuizzes);
-      setLoading(false);
-    }, 500); // giả lập delay API
-
+    fetchData();
   }, [categoryId]);
 
   // Apply filters khi các state filter thay đổi
   useEffect(() => {
     let result = [...quizzes];
-
-    // Filter by difficulty
-    if (selectedDifficulty !== 'all') {
-      result = result.filter(quiz => quiz.difficulty === selectedDifficulty);
-    }
 
     // Apply sorting
     switch (selectedSort) {
@@ -163,12 +81,12 @@ function CategoryQuizzes() {
         break;
       case 'popular':
       default:
-        result.sort((a, b) => b.completions - a.completions);
+        result.sort((a, b) => (b.completions || 0) - (a.completions || 0));
         break;
     }
 
     setFilteredQuizzes(result);
-  }, [quizzes, selectedDifficulty, selectedSort]);
+  }, [quizzes, selectedSort]);
 
   if (loading) {
     return (
@@ -225,9 +143,6 @@ function CategoryQuizzes() {
           {/* Sidebar Filters - Hidden on mobile, visible on desktop */}
           <div className="lg:w-1/4 hidden lg:block">
             <FilterSidebar
-              difficulties={difficulties}
-              selectedDifficulty={selectedDifficulty}
-              setSelectedDifficulty={setSelectedDifficulty}
               sortOptions={sortOptions}
               selectedSort={selectedSort}
               setSelectedSort={setSelectedSort}
@@ -275,7 +190,6 @@ function CategoryQuizzes() {
                     title={quiz.title}
                     description={quiz.description}
                     image={quiz.image}
-                    difficulty={quiz.difficulty}
                     questionCount={quiz.questionCount}
                     completions={quiz.completions}
                   />
@@ -290,7 +204,6 @@ function CategoryQuizzes() {
                 <p className="text-gray-600 mb-4">Vui lòng thử thay đổi bộ lọc hoặc quay lại sau.</p>
                 <button
                   onClick={() => {
-                    setSelectedDifficulty('all');
                     setSelectedSort('popular');
                   }}
                   className="bg-primary hover:bg-darkPrimary text-white font-medium py-2 px-6 rounded-lg transition-colors"
@@ -308,4 +221,4 @@ function CategoryQuizzes() {
   );
 }
 
-export default CategoryQuizzes; 
+export default CategoryQuizzes;
