@@ -1,109 +1,51 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { AuthContext } from '../../context/AuthContext'; // Điều chỉnh đường dẫn
 import Navbar from '../Home/Navbar/Navbar';
 import Footer from '../Home/Footer/Footer';
+import LoginModal from '../../components/Auth/LoginModal'; // Điều chỉnh đường dẫn
 
 function QuizDetail() {
   const { quizId } = useParams();
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
   const [quiz, setQuiz] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showStartModal, setShowStartModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
-  // Mock data
+  // Fetch quiz details từ API
   useEffect(() => {
-    const mockQuizzes = [
-      {
-        id: '1',
-        categoryId: '1',
-        categoryName: 'Tính cách',
-        title: 'Bạn thuộc nhóm tính cách nào?',
-        description: 'Khám phá bạn thuộc nhóm tính cách MBTI nào qua 20 câu hỏi đơn giản',
-        detailedDescription: 'Bài test này sẽ giúp bạn hiểu rõ hơn về tính cách của mình thông qua hệ thống phân loại Myers-Briggs Type Indicator (MBTI). Với 20 câu hỏi được thiết kế cẩn thận, bạn sẽ khám phá ra mình thuộc một trong 16 loại tính cách khác nhau, từ đó hiểu được điểm mạnh, điểm yếu và cách tương tác với thế giới xung quanh.',
-        image: 'https://www.verywellmind.com/thmb/uwCfX7jYs3W2U5lc6S5vJ25XPCY=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/2795284-00-MBTI-typing-system-and-the-types_V1-c7d2798146ae4f2cbe0fb767118eb89e.jpg',
-        difficulty: 'Dễ',
-        questionCount: 20,
-        estimatedTime: '10-15 phút',
-        completions: 15240,
-        rating: 4.8,
-        reviewCount: 1840,
-        tags: ['MBTI', 'Tâm lý học', 'Tự nhận thức', 'Tính cách'],
-        objectives: [
-          'Xác định loại tính cách MBTI của bạn',
-          'Hiểu được điểm mạnh và điểm yếu của bản thân',
-          'Khám phá cách bạn tương tác với người khác',
-          'Tìm hiểu môi trường làm việc phù hợp'
-        ],
-        whatYouWillLearn: [
-          'Bạn là người hướng nội hay hướng ngoại',
-          'Cách bạn tiếp nhận và xử lý thông tin',
-          'Phong cách ra quyết định của bạn',
-          'Cách bạn tổ chức cuộc sống hàng ngày'
-        ],
-        requirements: [
-          'Trả lời các câu hỏi một cách trung thực',
-          'Dành 10-15 phút để hoàn thành',
-          'Không cần kiến thức chuyên môn'
-        ],
-        createdAt: '2023-09-15',
-        author: 'Dr. Sarah Johnson',
-        authorBio: 'Tiến sĩ Tâm lý học với 15 năm kinh nghiệm nghiên cứu về tính cách con người'
-      },
-      {
-        id: '2',
-        categoryId: '1',
-        categoryName: 'Tính cách',
-        title: 'Phong cách làm việc của bạn',
-        description: 'Tìm hiểu phong cách làm việc và cách phối hợp với đồng nghiệp hiệu quả',
-        detailedDescription: 'Khám phá phong cách làm việc độc đáo của bạn và cách tối ưu hóa hiệu suất trong môi trường làm việc. Bài test này sẽ giúp bạn hiểu được cách bạn tiếp cận công việc, tương tác với đồng nghiệp và quản lý thời gian.',
-        image: 'https://www.ntaskmanager.com/wp-content/uploads/2019/07/3.png',
-        difficulty: 'Trung bình',
-        questionCount: 15,
-        estimatedTime: '8-12 phút',
-        completions: 8920,
-        rating: 4.6,
-        reviewCount: 920,
-        tags: ['Làm việc', 'Quản lý thời gian', 'Teamwork', 'Hiệu suất'],
-        objectives: [
-          'Xác định phong cách làm việc của bạn',
-          'Cải thiện hiệu suất công việc',
-          'Tăng cường khả năng làm việc nhóm',
-          'Quản lý thời gian hiệu quả hơn'
-        ],
-        whatYouWillLearn: [
-          'Cách bạn tiếp cận các dự án mới',
-          'Phong cách giao tiếp trong công việc',
-          'Cách bạn xử lý áp lực và deadline',
-          'Môi trường làm việc lý tưởng cho bạn'
-        ],
-        requirements: [
-          'Có kinh nghiệm làm việc tối thiểu 6 tháng',
-          'Trả lời dựa trên kinh nghiệm thực tế',
-          'Hoàn thành trong môi trường yên tĩnh'
-        ],
-        createdAt: '2023-10-02',
-        author: 'Prof. Michael Chen',
-        authorBio: 'Chuyên gia tư vấn quản lý nhân sự với hơn 20 năm kinh nghiệm'
-      }
-    ];
+    const fetchQuizDetail = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/quizzes/${quizId}`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const result = await response.json();
+        console.log('API response:', result);
 
-    setTimeout(() => {
-      const foundQuiz = mockQuizzes.find(q => q.id === quizId);
-      setQuiz(foundQuiz);
-      setLoading(false);
-    }, 800);
+        if (result.success && result.data) {
+          setQuiz(result.data);
+        } else {
+          throw new Error('Không thể lấy dữ liệu quiz');
+        }
+      } catch (err) {
+        console.error('Lỗi khi fetch quiz:', err);
+        setQuiz(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchQuizDetail();
   }, [quizId]);
 
-  const getDifficultyColor = (level) => {
-    switch(level) {
-      case 'Dễ': return 'bg-green-100 text-green-800 border-green-200';
-      case 'Trung bình': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'Khó': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-blue-100 text-blue-800 border-blue-200';
-    }
-  };
-
   const handleStartQuiz = () => {
+    // Kiểm tra đăng nhập
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
     setShowStartModal(true);
   };
 
@@ -171,75 +113,8 @@ function QuizDetail() {
                 <img className="w-full h-full object-cover" src={quiz.image} alt={quiz.title} />
               </div>
               <div className="p-6">
-                <div className="flex flex-wrap items-center gap-2 mb-3">
-                  <span className={`inline-block px-3 py-1 text-sm font-semibold rounded-full border ${getDifficultyColor(quiz.difficulty)}`}>
-                    {quiz.difficulty}
-                  </span>
-                  {quiz.tags.map(tag => (
-                    <span key={tag} className="inline-block px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-full">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
                 <h1 className="text-3xl font-bold text-gray-800 mb-3">{quiz.title}</h1>
                 <p className="text-gray-600 mb-4">{quiz.description}</p>
-                
-                {/* Stats */}
-                <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600">
-                  <div className="flex items-center">
-                    <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                    <span>{quiz.rating}/5 ({quiz.reviewCount} đánh giá)</span>
-                  </div>
-                  <div className="flex items-center">
-                    <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                    </svg>
-                    <span>{quiz.completions.toLocaleString()} người đã làm</span>
-                  </div>
-                  <div className="flex items-center">
-                    <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>{quiz.estimatedTime}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Detailed Description */}
-            <div className="bg-white rounded-xl shadow-md p-6 mb-8">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Mô tả chi tiết</h2>
-              <p className="text-gray-600 leading-relaxed">{quiz.detailedDescription}</p>
-            </div>
-
-            {/* What You Will Learn */}
-            <div className="bg-white rounded-xl shadow-md p-6 mb-8">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Bạn sẽ học được gì?</h2>
-              <ul className="space-y-3">
-                {quiz.whatYouWillLearn.map((item, index) => (
-                  <li key={index} className="flex items-start">
-                    <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    <span className="text-gray-600">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Author Info */}
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Tác giả</h2>
-              <div className="flex items-start">
-                <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold mr-4">
-                  {quiz.author.split(' ').map(name => name[0]).join('')}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-800">{quiz.author}</h3>
-                  <p className="text-gray-600 text-sm">{quiz.authorBio}</p>
-                </div>
               </div>
             </div>
           </div>
@@ -255,18 +130,8 @@ function QuizDetail() {
                   <span className="font-semibold">{quiz.questionCount} câu</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Thời gian:</span>
-                  <span className="font-semibold">{quiz.estimatedTime}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Độ khó:</span>
-                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getDifficultyColor(quiz.difficulty)}`}>
-                    {quiz.difficulty}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Đánh giá:</span>
-                  <span className="font-semibold">{quiz.rating}/5 ⭐</span>
+                  <span className="text-gray-600">Lượt làm:</span>
+                  <span className="font-semibold">{quiz.completions.toLocaleString()} </span>
                 </div>
               </div>
 
@@ -295,32 +160,6 @@ function QuizDetail() {
                   Chia sẻ
                 </button>
               </div>
-
-              {/* Requirements */}
-              <div className="mt-6 pt-6 border-t">
-                <h4 className="font-semibold text-gray-800 mb-3">Yêu cầu</h4>
-                <ul className="text-sm text-gray-600 space-y-2">
-                  {quiz.requirements.map((req, index) => (
-                    <li key={index} className="flex items-start">
-                      <span className="w-2 h-2 bg-gray-400 rounded-full mr-2 mt-2 flex-shrink-0"></span>
-                      {req}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Objectives */}
-              <div className="mt-6 pt-6 border-t">
-                <h4 className="font-semibold text-gray-800 mb-3">Mục tiêu</h4>
-                <ul className="text-sm text-gray-600 space-y-2">
-                  {quiz.objectives.map((obj, index) => (
-                    <li key={index} className="flex items-start">
-                      <span className="w-2 h-2 bg-primary rounded-full mr-2 mt-2 flex-shrink-0"></span>
-                      {obj}
-                    </li>
-                  ))}
-                </ul>
-              </div>
             </div>
           </div>
         </div>
@@ -338,7 +177,7 @@ function QuizDetail() {
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">Bắt đầu làm bài?</h3>
               <p className="text-sm text-gray-500 mb-6">
-                Bạn sẽ có {quiz.estimatedTime} để hoàn thành {quiz.questionCount} câu hỏi. 
+                Bạn sẽ hoàn thành {quiz.questionCount} câu hỏi. 
                 Hãy đảm bảo bạn đã sẵn sàng trước khi bắt đầu.
               </p>
               <div className="flex gap-3">
@@ -358,6 +197,14 @@ function QuizDetail() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Login Modal */}
+      {showLoginModal && (
+        <LoginModal 
+          isOpen={showLoginModal} 
+          onClose={() => setShowLoginModal(false)}
+        />
       )}
 
       <Footer />

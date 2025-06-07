@@ -158,6 +158,60 @@ app.get('/api/popular-quizzes', async (req, res) => {
   }
 });
 
+// Lấy chi tiết một quiz theo quizId
+app.get('/api/quizzes/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data: quiz, error } = await supabase
+      .from('quizzes')
+      .select(`
+        *,
+        categories (name)
+      `)
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('Lỗi khi lấy quiz:', error);
+      return res.status(500).json({ message: 'Lỗi server khi lấy chi tiết quiz' });
+    }
+
+    if (!quiz) {
+      return res.status(404).json({ message: 'Không tìm thấy quiz' });
+    }
+
+    let imageUrl = null;
+    if (quiz.image_url) {
+      const { data } = supabase.storage
+        .from('project-bucket')
+        .getPublicUrl(quiz.image_url);
+      imageUrl = data.publicUrl;
+    }
+
+    const formattedQuiz = {
+      id: quiz.id.toString(),
+      categoryId: quiz.category_id.toString(),
+      categoryName: quiz.categories?.name || 'Unknown Category',
+      title: quiz.title,
+      description: quiz.description,
+      image: imageUrl,
+      questionCount: quiz.total_questions || 0,
+      completions: quiz.play_count || 0,
+      createdAt: quiz.created_at,
+    };
+
+    return res.json({
+      success: true,
+      data: formattedQuiz,
+    });
+  } catch (error) {
+    console.error('Lỗi không mong muốn:', error);
+    return res.status(500).json({ message: 'Lỗi server' });
+  }
+});
+
+
 // Đăng ký
 // API lấy danh sách users (CHO ADMIN) - LONG THÊM MỚI
 app.get('/api/users', async (req, res) => {
