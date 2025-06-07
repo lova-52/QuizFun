@@ -1,16 +1,29 @@
 import React, { useEffect, useState } from 'react';
-import supabase from '../../../supabaseClient';
 
 const UserList = () => {
   const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      const { data } = await supabase.from('user').select('*');
-      setUsers(data);
-    };
-    fetchUsers();
+    fetch('http://localhost:5000/api/users')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setUsers(data.users);
+        } else {
+          setError('Có lỗi xảy ra khi lấy danh sách người dùng');
+        }
+        setLoading(false);
+      })
+      .catch(err => {
+        setError('Lỗi khi kết nối đến server');
+        setLoading(false);
+      });
   }, []);
+
+  if (loading) return <div>Đang tải...</div>;
+  if (error) return <div className="text-red-500">{error}</div>;
 
   return (
     <div className="max-w-4xl mx-auto mt-10 p-6 bg-white rounded-xl shadow-md">
@@ -21,7 +34,6 @@ const UserList = () => {
             <th className="py-2 px-4 text-left">Tên</th>
             <th className="py-2 px-4 text-left">Email</th>
             <th className="py-2 px-4 text-left">Vai trò</th>
-            <th className="py-2 px-4 text-center">Hành động</th>
           </tr>
         </thead>
         <tbody>
@@ -30,10 +42,6 @@ const UserList = () => {
               <td className="py-2 px-4">{user.name}</td>
               <td className="py-2 px-4">{user.email}</td>
               <td className="py-2 px-4">{user.role}</td>
-              <td className="py-2 px-4 text-center">
-                <button className="text-blue-500 hover:underline mr-3">Sửa</button>
-                <button className="text-red-500 hover:underline">Xóa</button>
-              </td>
             </tr>
           ))}
         </tbody>
@@ -43,4 +51,3 @@ const UserList = () => {
 };
 
 export default UserList;
-// This component fetches the list of users from the Supabase database and displays them in a table.
