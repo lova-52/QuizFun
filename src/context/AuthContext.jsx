@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export const AuthContext = createContext();
 
@@ -6,12 +6,12 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    // Khi app load, lấy user từ localStorage nếu có
     const storedUser = localStorage.getItem('user');
     if (storedUser) setUser(JSON.parse(storedUser));
   }, []);
 
-  const login = (userData, token) => {
+  const login = (loginData) => {
+    const { token, user: userData } = loginData;
     localStorage.setItem('user', JSON.stringify(userData));
     localStorage.setItem('token', token);
     setUser(userData);
@@ -29,3 +29,6 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   );
 }
+
+// Thêm custom hook useAuth để truy cập context
+export const useAuth = () => useContext(AuthContext);
