@@ -316,14 +316,12 @@ function QuizzTake() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
         <div className="container mx-auto px-4 py-16 max-w-4xl flex justify-center items-center min-h-[60vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary mx-auto"></div>
             <p className="mt-4 text-gray-600">Đang tải câu hỏi...</p>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -331,7 +329,6 @@ function QuizzTake() {
   if (!quiz) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
         <div className="container mx-auto px-4 py-16 max-w-4xl">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-800">Không tìm thấy bài quiz</h2>
@@ -343,7 +340,6 @@ function QuizzTake() {
             </button>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -352,7 +348,6 @@ function QuizzTake() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
       
       {/* Header với timer và progress */}
       <div className="bg-white border-b shadow-sm sticky top-0 z-40">
@@ -578,8 +573,6 @@ function QuizzTake() {
           </div>
         </div>
       )}
-
-      <Footer />
     </div>
   );
 }

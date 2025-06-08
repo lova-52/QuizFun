@@ -91,14 +91,12 @@ function CategoryQuizzes() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
         <div className="container mx-auto px-4 py-16 max-w-7xl flex justify-center items-center min-h-[60vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary mx-auto"></div>
             <p className="mt-4 text-gray-600">Đang tải...</p>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -106,7 +104,6 @@ function CategoryQuizzes() {
   if (!category) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
         <div className="container mx-auto px-4 py-16 max-w-7xl">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-800">Không tìm thấy chủ đề này</h2>
@@ -116,14 +113,12 @@ function CategoryQuizzes() {
             </Link>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
 
       {/* Banner */}
       <div
@@ -215,8 +210,6 @@ function CategoryQuizzes() {
           </div>
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 }
