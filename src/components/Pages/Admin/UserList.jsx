@@ -22,6 +22,14 @@ const UserList = () => {
       });
   }, []);
 
+  // Thêm hàm xử lý sự kiện cho nút Xem
+  // TODO: Thay bằng logic gọi API hoặc chuyển hướng đến trang kết quả
+  const handleView = (userId) => {
+    console.log(`Xem kết quả của người dùng với ID: ${userId}`);
+    // Ví dụ: Chuyển hướng đến trang kết quả: window.location.href = `/admin/user/${userId}/results`;
+    // Hoặc gọi API: fetch(`http://localhost:5000/api/user/${userId}/results`)
+  };
+
   if (loading) return <div className="text-center py-4">Đang tải dữ liệu...</div>;
   if (error) return <div className="text-red-500 text-center py-4">{error}</div>;
 
@@ -47,8 +55,15 @@ const UserList = () => {
                 <button className="text-blue-500 hover:text-blue-700 mr-4">
                   Sửa
                 </button>
-                <button className="text-red-500 hover:text-red-700">
+                <button className="text-red-500 hover:text-red-700 mr-4">
                   Xóa
+                </button>
+                {/* Thêm nút Xem để xem kết quả của người chơi */}
+                <button
+                  className="text-green-500 hover:text-green-700"
+                  onClick={() => handleView(user.id)}
+                >
+                  Xem
                 </button>
               </td>
             </tr>

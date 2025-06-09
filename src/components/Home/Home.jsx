@@ -4,7 +4,7 @@ import Navbar from './Navbar/Navbar';
 import Footer from './Footer/Footer';
 import Hero from '../Hero/Hero';
 import LoginModal from '../Auth/LoginModal';
-import RegisterModal from '../Auth/RegisterModal'; // 👈 Thêm dòng này
+import RegisterModal from '../Auth/RegisterModal';
 import StatsSection from './Stats/StatsSection';
 import PopularQuizzesSection from './PopularQuizzes/PopularQuizzesSection';
 import CategoriesSection from './Categories/CategoriesSection';
@@ -14,7 +14,7 @@ import CTA from './CTA/CTA';
 
 const Home = () => {
   const [showLogin, setShowLogin] = useState(false);
-  const [showRegister, setShowRegister] = useState(false); // 👈 Thêm state này
+  const [showRegister, setShowRegister] = useState(false);
 
   return (
     <>
@@ -22,11 +22,11 @@ const Home = () => {
         onLoginClick={() => {
           console.log('Login clicked');
           setShowLogin(true);
-          setShowRegister(false); // đảm bảo chỉ mở một modal
+          setShowRegister(false);
         }}
         onRegisterClick={() => {
           setShowRegister(true);
-          setShowLogin(false); // đảm bảo chỉ mở một modal
+          setShowLogin(false);
         }}
       />
 
