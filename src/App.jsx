@@ -67,13 +67,7 @@ const App = () => {
               <UserList />
             </Layout>
           } />
-          <Route path="/" exact element={<Home />} />
-          <Route path="/category/:categoryId" element={<Quizzes />} />
-          <Route path="/categories" element={<CategoriesPage />} />
-          <Route path="/quiz/:quizId" element={<QuizzDetail />} />
-          <Route path="/quiz/:quizId/take" element={<QuizzTake />} />
-          <Route path="/quiz/:quizId/result" element={<QuizResult />} />
-          <Route path="/login" element={<LoginModal />} /> {/* Thêm route cho /login */}
+         
           <Route
             path="/admin"
             element={
