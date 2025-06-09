@@ -3,36 +3,30 @@ import { Link } from 'react-router-dom';
 import { AuthContext } from '../../../context/AuthContext';
 
 const Navbar = ({ onLoginClick, onRegisterClick }) => {
-  // Lấy user từ AuthContext
   const { user, logout } = useContext(AuthContext);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null); // Reference cho dropdown menu để kiểm tra click bên ngoài
+  const dropdownRef = useRef(null);
 
-  // Toggle cho menu mobile (hamburger menu)
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
-  // Toggle cho dropdown của user (sau khi login)
   const toggleUserDropdown = () => {
     setUserDropdownOpen(!userDropdownOpen);
   };
 
-  // Scroll lên đầu trang mỗi khi menu được click
   const handleNavClick = () => {
     window.scrollTo(0, 0);
     setMobileMenuOpen(false);
   };
 
-  // Logout user
   const handleLogout = () => {
-    logout(); // gọi hàm logout từ AuthContext để reset state
-    setUserDropdownOpen(false); // Đóng dropdown sau khi logout
+    logout();
+    setUserDropdownOpen(false);
   };
 
-  // Đóng dropdown khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -40,9 +34,9 @@ const Navbar = ({ onLoginClick, onRegisterClick }) => {
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside); // Bắt sự kiện click ngoài
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside); // Dọn dẹp khi component unmount
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
 
@@ -53,7 +47,6 @@ const Navbar = ({ onLoginClick, onRegisterClick }) => {
           <div className="flex justify-between items-center py-4">
             <Link to="/" onClick={handleNavClick} className="flex items-center space-x-2">
               <div className="w-10 h-10 bg-gradient-to-r from-primary to-accent rounded-lg flex items-center justify-center">
-                {/* Logo */}
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
@@ -69,15 +62,23 @@ const Navbar = ({ onLoginClick, onRegisterClick }) => {
               <Link to="/explore" onClick={handleNavClick} className="font-medium hover:text-primary transition-colors border-b-2 border-transparent hover:border-primary pb-1">Khám phá</Link>
               <Link to="/topics" onClick={handleNavClick} className="font-medium hover:text-primary transition-colors border-b-2 border-transparent hover:border-primary pb-1">Chủ đề</Link>
               <Link to="/about" onClick={handleNavClick} className="font-medium hover:text-primary transition-colors border-b-2 border-transparent hover:border-primary pb-1">Về chúng tôi</Link>
+              {user && user.role === 'admin' && (
+                <Link
+                  to="/admin"
+                  onClick={handleNavClick}
+                  className="font-medium text-blue-500 hover:text-blue-700 transition-colors border-b-2 border-transparent hover:border-blue-500 pb-1"
+                >
+                  Đi tới Dashboard Admin
+                </Link>
+              )}
             </nav>
             
             {/* Auth Section - Đăng nhập/Đăng ký hoặc Menu User */}
             <div className="flex items-center space-x-4">
               {user ? (
-                // Nếu user đã đăng nhập - hiển thị menu user
                 <div className="relative" ref={dropdownRef}>
                   <button 
-                    onClick={toggleUserDropdown} // Hiển thị/hide dropdown
+                    onClick={toggleUserDropdown}
                     className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 rounded-full px-4 py-2 transition-colors"
                   >
                     <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
@@ -86,7 +87,7 @@ const Navbar = ({ onLoginClick, onRegisterClick }) => {
                       </span>
                     </div>
                     <span className="font-medium text-gray-700 hidden md:block">
-                      {user.name || user.email.split('@')[0]} {/* Hiển thị tên hoặc email user */}
+                      {user.name || user.email.split('@')[0]}
                     </span>
                     <svg 
                       xmlns="http://www.w3.org/2000/svg" 
@@ -99,17 +100,15 @@ const Navbar = ({ onLoginClick, onRegisterClick }) => {
                     </svg>
                   </button>
 
-                  {/* Dropdown menu user */}
                   {userDropdownOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                       <div className="px-4 py-2 border-b border-gray-100">
                         <p className="text-sm font-medium text-gray-800">
-                          {user.name || 'Người dùng'} {/* Hiển thị tên user */}
+                          {user.name || 'Người dùng'}
                         </p>
-                        <p className="text-sm text-gray-500">{user.email}</p> {/* Hiển thị email */}
+                        <p className="text-sm text-gray-500">{user.email}</p>
                       </div>
                       
-                      {/* Các menu item */}
                       <Link 
                         to="/profile" 
                         onClick={() => { handleNavClick(); setUserDropdownOpen(false); }}
@@ -147,7 +146,6 @@ const Navbar = ({ onLoginClick, onRegisterClick }) => {
                   )}
                 </div>
               ) : (
-                // Nếu user chưa đăng nhập
                 <>
                   <button onClick={onLoginClick} className="hidden md:block font-medium text-primary hover:text-darkPrimary transition-colors">Đăng nhập</button>
                   <button onClick={onRegisterClick} className="bg-primary hover:bg-darkPrimary text-white px-5 py-2 rounded-full font-medium transition-colors flex items-center">
@@ -178,10 +176,18 @@ const Navbar = ({ onLoginClick, onRegisterClick }) => {
             <Link to="/explore" className="font-medium py-2 px-4 rounded hover:bg-blue-50 hover:text-primary transition-colors">Khám phá</Link>
             <Link to="/topics" className="font-medium py-2 px-4 rounded hover:bg-blue-50 hover:text-primary transition-colors">Chủ đề</Link>
             <Link to="/about" className="font-medium py-2 px-4 rounded hover:bg-blue-50 hover:text-primary transition-colors">Về chúng tôi</Link>
+            {user && user.role === 'admin' && (
+              <Link
+                to="/admin"
+                onClick={handleNavClick}
+                className="font-medium py-2 px-4 rounded hover:bg-blue-50 hover:text-primary transition-colors"
+              >
+                Đi tới Dashboard Admin
+              </Link>
+            )}
             <hr className="my-2" />
             
             {user ? (
-              // Mobile user menu
               <>
                 <div className="py-2 px-4">
                   <p className="font-medium text-gray-800">{user.name || user.email.split('@')[0]}</p>
@@ -192,7 +198,6 @@ const Navbar = ({ onLoginClick, onRegisterClick }) => {
                 <button onClick={handleLogout} className="font-medium py-2 px-4 rounded text-red-600 hover:bg-red-50 transition-colors text-left">Đăng xuất</button>
               </>
             ) : (
-              // Mobile login button
               <button onClick={onLoginClick} className="font-medium py-2 px-4 rounded text-primary hover:bg-blue-50 transition-colors text-left">Đăng nhập</button>
             )}
           </nav>
