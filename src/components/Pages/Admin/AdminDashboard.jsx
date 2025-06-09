@@ -1,24 +1,47 @@
 import React from 'react';
-import { Outlet, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 const AdminDashboard = () => {
   return (
-    <div className="max-w-6xl mx-auto mt-10 p-6 bg-white rounded-xl shadow-lg">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">Admin Dashboard</h1>
-      <nav className="mb-6">
-        <ul className="flex space-x-6">
-          <li>
+    <div className="min-h-screen bg-gray-100">
+      <main className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-blue-400 mb-6">Admin Dashboard</h1>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Card Quản lý người dùng */}
+          <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+            <h2 className="text-xl font-semibold text-gray-700 mb-2">Quản lý người dùng</h2>
+            <p className="text-gray-600">Xem và chỉnh sửa danh sách người dùng.</p>
             <Link
               to="/admin/users"
-              className="text-blue-500 hover:text-blue-700 font-semibold"
+              className="mt-4 inline-block text-blue-500 hover:text-blue-700 font-medium"
             >
-              Quản lý người dùng
+              Đi tới →
             </Link>
-          </li>
-          {/* Thêm các link khác sau này, ví dụ: Quản lý quiz, categories */}
-        </ul>
-      </nav>
-      <Outlet /> {/* Render các route con như /admin/users */}
+          </div>
+          {/* Card Quản lý Quiz */}
+          <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+            <h2 className="text-xl font-semibold text-gray-700 mb-2">Quản lý Quiz</h2>
+            <p className="text-gray-600">Quản lý các bài quiz và danh mục.</p>
+            <Link
+              to="#"
+              className="mt-4 inline-block text-blue-500 hover:text-blue-700 font-medium"
+            >
+              Đi tới →
+            </Link>
+          </div>
+          {/* Card Thống kê */}
+          <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+            <h2 className="text-xl font-semibold text-gray-700 mb-2">Thống kê</h2>
+            <p className="text-gray-600">Xem báo cáo và phân tích dữ liệu.</p>
+            <Link
+              to="#"
+              className="mt-4 inline-block text-blue-500 hover:text-blue-700 font-medium"
+            >
+              Đi tới →
+            </Link>
+          </div>
+        </div>
+      </main>
     </div>
   );
 };
