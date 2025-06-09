@@ -230,6 +230,7 @@ app.get('/api/quizzes/:id/questions', async (req, res) => {
       });
     }
 
+    // Lấy tất cả câu hỏi của quiz, sắp xếp theo order (bao gồm cả question_image)
     const { data: questions, error: questionsError } = await supabase
       .from('questions')
       .select('*')
@@ -270,13 +271,26 @@ app.get('/api/quizzes/:id/questions', async (req, res) => {
       });
       return acc;
     }, {});
+    // Format dữ liệu câu hỏi với URL ảnh
+    const formattedQuestions = await Promise.all(questions.map(async (question, index) => {
+      let questionImageUrl = null;
+      
+      // Nếu có question_image, tạo public URL
+      if (question.question_image) {
+        const { data } = supabase.storage
+          .from('project-bucket')
+          .getPublicUrl(question.question_image);
+        questionImageUrl = data.publicUrl;
+      }
 
-    const formattedQuestions = questions.map((question, index) => ({
-      id: question.id,
-      question: question.content,
-      type: question.type,
-      order: question.order,
-      answers: answersGrouped[question.id] || []
+      return {
+        id: question.id,
+        question: question.content,
+        questionImage: questionImageUrl, // Thêm URL ảnh câu hỏi
+        type: question.type, // 'single_choice' hoặc 'multi_choice'
+        order: question.order,
+        answers: answersGrouped[question.id] || []
+      };
     }));
 
     const quizInfo = {

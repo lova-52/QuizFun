@@ -9,7 +9,7 @@ function QuizzTake() {
   const navigate = useNavigate();
   const { user, token, openLogin } = useContext(AuthContext);
   const [isAuthChecked, setIsAuthChecked] = useState(false); // Thêm trạng thái kiểm tra xác thực
-  
+
   const [quiz, setQuiz] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -25,7 +25,7 @@ function QuizzTake() {
     // Kiểm tra localStorage để khôi phục trạng thái ngay lập tức
     const savedToken = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
-    
+
     if (savedToken && savedUser) {
       // Nếu đã có user và token trong localStorage, đánh dấu đã kiểm tra
       setIsAuthChecked(true);
@@ -56,34 +56,34 @@ function QuizzTake() {
     const fetchQuizData = async () => {
       try {
         setLoading(true);
-        
+
         const response = await fetch(`http://localhost:5000/api/quizzes/${quizId}/questions`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
         });
-        
+
         if (!response.ok) {
           if (response.status === 401) {
             throw new Error('Bạn cần đăng nhập để truy cập bài quiz');
           }
           throw new Error('Không thể tải dữ liệu quiz');
         }
-        
+
         const data = await response.json();
-        
+
         if (!data.success) {
           throw new Error(data.message || 'Lỗi khi tải quiz');
         }
-        
+
         const { quiz: quizInfo, questions: questionsData } = data.data;
-        
+
         setQuiz(quizInfo);
         setQuestions(questionsData);
-        
+
         const timeInSeconds = (quizInfo.timeLimit || 15) * 60;
         setTimeLeft(timeInSeconds);
-        
+
       } catch (err) {
         console.error('Error fetching quiz:', err);
         setError(err.message);
@@ -118,7 +118,7 @@ function QuizzTake() {
       if (isMultiChoice) {
         const currentAnswers = prev[questionId] || [];
         const isSelected = currentAnswers.includes(answerId);
-        
+
         if (isSelected) {
           return {
             ...prev,
@@ -174,40 +174,40 @@ function QuizzTake() {
       const result = await response.json();
 
       if (result.success) {
-        navigate(`/quiz/${quizId}/result`, { 
-          state: { 
+        navigate(`/quiz/${quizId}/result`, {
+          state: {
             ...result.data,
             quizTitle: quiz.title
-          } 
+          }
         });
       } else {
         console.error('Submit failed:', result.message);
         const totalAnswered = Object.keys(answers).length;
         const completionRate = (totalAnswered / questions.length) * 100;
-        
-        navigate(`/quiz/${quizId}/result`, { 
-          state: { 
-            answers, 
+
+        navigate(`/quiz/${quizId}/result`, {
+          state: {
+            answers,
             totalQuestions: questions.length,
             completionRate,
             timeSpent: (quiz.timeLimit * 60) - timeLeft,
             quizTitle: quiz.title
-          } 
+          }
         });
       }
     } catch (error) {
       console.error('Error submitting quiz:', error);
       const totalAnswered = Object.keys(answers).length;
       const completionRate = (totalAnswered / questions.length) * 100;
-      
-      navigate(`/quiz/${quizId}/result`, { 
-        state: { 
-          answers, 
+
+      navigate(`/quiz/${quizId}/result`, {
+        state: {
+          answers,
           totalQuestions: questions.length,
           completionRate,
           timeSpent: (quiz.timeLimit * 60) - timeLeft,
           quizTitle: quiz.title
-        } 
+        }
       });
     }
   };
@@ -285,7 +285,7 @@ function QuizzTake() {
             </div>
             <h2 className="text-2xl font-bold text-gray-800 mb-2">Lỗi tải dữ liệu</h2>
             <p className="text-gray-600 mb-4">{error}</p>
-            <button 
+            <button
               onClick={() => navigate('/')}
               className="bg-primary hover:bg-darkPrimary text-white px-6 py-2 rounded-lg"
             >
@@ -303,7 +303,7 @@ function QuizzTake() {
         <div className="container mx-auto px-4 py-16 max-w-4xl">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-800">Không tìm thấy câu hỏi</h2>
-            <button 
+            <button
               onClick={() => navigate('/')}
               className="mt-4 bg-primary hover:bg-darkPrimary text-white px-6 py-2 rounded-lg"
             >
@@ -320,13 +320,13 @@ function QuizzTake() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      
+
       {/* Header với timer và progress */}
       <div className="bg-white border-b shadow-sm sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4 max-w-7xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <button 
+              <button
                 onClick={() => setShowExitModal(true)}
                 className="text-gray-500 hover:text-gray-700"
               >
@@ -336,7 +336,7 @@ function QuizzTake() {
               </button>
               <h1 className="text-lg font-semibold text-gray-800 truncate">{quiz.title}</h1>
             </div>
-            
+
             <div className="flex items-center space-x-6">
               <div className="text-sm text-gray-600">
                 <span className="font-medium">{getAnsweredCount()}</span>/{questions.length} câu
@@ -346,11 +346,11 @@ function QuizzTake() {
               </div>
             </div>
           </div>
-          
+
           {/* Progress bar */}
           <div className="mt-3">
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
+              <div
                 className="bg-primary h-2 rounded-full transition-all duration-300"
                 style={{ width: `${getProgress()}%` }}
               ></div>
@@ -371,19 +371,18 @@ function QuizzTake() {
                   <button
                     key={question.id}
                     onClick={() => setCurrentQuestion(index)}
-                    className={`w-12 h-10 rounded-lg font-medium text-sm transition-colors ${
-                      index === currentQuestion
-                        ? 'bg-primary text-white'
-                        : answers[question.id] && answers[question.id].length > 0
+                    className={`w-12 h-10 rounded-lg font-medium text-sm transition-colors ${index === currentQuestion
+                      ? 'bg-primary text-white'
+                      : answers[question.id] && answers[question.id].length > 0
                         ? 'bg-green-100 text-green-700 border border-green-200'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
+                      }`}
                   >
                     {index + 1}
                   </button>
                 ))}
               </div>
-              
+
               {/* Thống kê */}
               <div className="mt-6 p-4 bg-gray-50 rounded-lg">
                 <div className="text-sm text-gray-600 space-y-2">
@@ -418,8 +417,23 @@ function QuizzTake() {
                 <h2 className="text-xl font-semibold text-gray-800 leading-relaxed">
                   {currentQ.question}
                 </h2>
-              </div>
 
+                {/* Hiển thị ảnh câu hỏi nếu có */}
+                {currentQ.questionImage && (
+                  <div className="mt-4 text-center">
+                    <img
+                      src={currentQ.questionImage}
+                      alt="Hình ảnh câu hỏi"
+                      className="inline-block h-auto rounded-lg shadow-md border border-gray-200"
+                      style={{ maxHeight: '300px', maxWidth: '500px' }}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        console.log('Lỗi tải ảnh câu hỏi:', currentQ.questionImage);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
               {/* Answer options */}
               <div className="p-6">
                 <div className="space-y-3">
@@ -427,26 +441,22 @@ function QuizzTake() {
                     <button
                       key={answer.id}
                       onClick={() => handleAnswerSelect(currentQ.id, answer.id, isMultiChoice)}
-                      className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                        isAnswerSelected(currentQ.id, answer.id)
-                          ? 'border-primary bg-primary bg-opacity-5 text-primary'
-                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                      }`}
+                      className={`w-full text-left p-4 rounded-lg border-2 transition-all ${isAnswerSelected(currentQ.id, answer.id)
+                        ? 'border-primary bg-primary bg-opacity-5 text-primary'
+                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        }`}
                     >
                       <div className="flex items-center">
-                        <div className={`w-5 h-5 mr-3 flex items-center justify-center ${
-                          isMultiChoice 
-                            ? `rounded border-2 ${
-                                isAnswerSelected(currentQ.id, answer.id)
-                                  ? 'border-primary bg-primary'
-                                  : 'border-gray-300'
-                              }`
-                            : `rounded-full border-2 ${
-                                isAnswerSelected(currentQ.id, answer.id)
-                                  ? 'border-primary bg-primary'
-                                  : 'border-gray-300'
-                              }`
-                        }`}>
+                        <div className={`w-5 h-5 mr-3 flex items-center justify-center ${isMultiChoice
+                          ? `rounded border-2 ${isAnswerSelected(currentQ.id, answer.id)
+                            ? 'border-primary bg-primary'
+                            : 'border-gray-300'
+                          }`
+                          : `rounded-full border-2 ${isAnswerSelected(currentQ.id, answer.id)
+                            ? 'border-primary bg-primary'
+                            : 'border-gray-300'
+                          }`
+                          }`}>
                           {isAnswerSelected(currentQ.id, answer.id) && (
                             isMultiChoice ? (
                               <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -470,11 +480,10 @@ function QuizzTake() {
                   <button
                     onClick={handlePrevious}
                     disabled={currentQuestion === 0}
-                    className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors ${
-                      currentQuestion === 0
-                        ? 'text-gray-400 cursor-not-allowed'
-                        : 'text-gray-600 hover:text-gray-800 hover:bg-white'
-                    }`}
+                    className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors ${currentQuestion === 0
+                      ? 'text-gray-400 cursor-not-allowed'
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-white'
+                      }`}
                   >
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
