@@ -22,12 +22,28 @@ const UserList = () => {
       });
   }, []);
 
-  // Thêm hàm xử lý sự kiện cho nút Xem
-  // TODO: Thay bằng logic gọi API hoặc chuyển hướng đến trang kết quả
   const handleView = (userId) => {
     console.log(`Xem kết quả của người dùng với ID: ${userId}`);
-    // Ví dụ: Chuyển hướng đến trang kết quả: window.location.href = `/admin/user/${userId}/results`;
-    // Hoặc gọi API: fetch(`http://localhost:5000/api/user/${userId}/results`)
+  };
+
+  const handleDelete = async (userId) => {
+    if (window.confirm(`Bạn có chắc muốn xóa tài khoản với ID: ${userId}?`)) {
+      try {
+        const response = await fetch(`http://localhost:5000/api/users/${userId}`, {
+          method: 'DELETE',
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          setUsers(users.filter(user => user.id !== userId));
+          setError(null);
+        } else {
+          setError(data.message || 'Xóa tài khoản thất bại');
+        }
+      } catch (err) {
+        setError('Lỗi khi kết nối đến server');
+      }
+    }
   };
 
   if (loading) return <div className="text-center py-4">Đang tải dữ liệu...</div>;
@@ -55,10 +71,12 @@ const UserList = () => {
                 <button className="text-blue-500 hover:text-blue-700 mr-4">
                   Sửa
                 </button>
-                <button className="text-red-500 hover:text-red-700 mr-4">
+                <button
+                  className="text-red-500 hover:text-red-700 mr-4"
+                  onClick={() => handleDelete(user.id)}
+                >
                   Xóa
                 </button>
-                {/* Thêm nút Xem để xem kết quả của người chơi */}
                 <button
                   className="text-green-500 hover:text-green-700"
                   onClick={() => handleView(user.id)}

@@ -12,7 +12,7 @@ import Layout from './components/Layout/layout';
 
 import AdminDashboard from './components/Pages/Admin/AdminDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
-import LoginModal from './components/Auth/LoginModal'; // Import LoginModal
+import LoginModal from './components/Auth/LoginModal';
 import { AuthProvider } from './context/AuthContext';
 
 const App = () => {
@@ -62,22 +62,27 @@ const App = () => {
             </Layout>
           } />
 
-          <Route path="/admin/users" element={
-            <Layout>
-              <UserList />
-            </Layout>
-          } />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute requireAdmin={true}>
+                <Layout>
+                  <UserList />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
          
           <Route
             path="/admin"
             element={
               <ProtectedRoute requireAdmin={true}>
-                <AdminDashboard />
+                <Layout>
+                  <AdminDashboard />
+                </Layout>
               </ProtectedRoute>
             }
-          >
-            <Route path="users" element={<UserList />} />
-          </Route>
+          />
         </Routes>
       </Router>
     </AuthProvider>
