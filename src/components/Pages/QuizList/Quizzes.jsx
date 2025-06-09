@@ -59,6 +59,7 @@ function CategoryQuizzes() {
     };
 
     fetchData();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [categoryId]);
 
   // Apply filters khi các state filter thay đổi

@@ -36,6 +36,7 @@ function CategoriesPage() {
     };
 
     fetchCategories();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   // Hiển thị loading state

@@ -1,24 +1,28 @@
-// context/AuthContext.js
 import React, { createContext, useState, useEffect } from 'react';
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+  const [token, setToken] = useState(() => {
+    const savedToken = localStorage.getItem('token');
+    return savedToken || null;
+  });
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
 
-  // Khôi phục user và token từ localStorage khi app khởi động
-  useEffect(() => {
-    const savedToken = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    
-    if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
-    }
-  }, []);
+  // Xóa useEffect vì đã khởi tạo state từ localStorage
+  // useEffect(() => {
+  //   const savedToken = localStorage.getItem('token');
+  //   const savedUser = localStorage.getItem('user');
+  //   if (savedToken && savedUser) {
+  //     setToken(savedToken);
+  //     setUser(JSON.parse(savedUser));
+  //   }
+  // }, []);
 
   const login = (userData, userToken) => {
     setUser(userData);

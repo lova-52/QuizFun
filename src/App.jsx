@@ -24,38 +24,42 @@ const App = () => {
               <Home />
             </Layout>
           } />
-          
+
           <Route path="/category/:categoryId" element={
             <Layout>
               <Quizzes />
             </Layout>
           } />
-          
+
           <Route path="/categories" element={
             <Layout>
               <CategoriesPage />
             </Layout>
           } />
-          
+
           <Route path="/quiz/:quizId" element={
             <Layout>
               <QuizzDetail />
             </Layout>
           } />
-          
+
           {/* Trang làm bài - không hiển thị footer */}
-          <Route path="/quiz/:quizId/take" element={
-            <Layout showFooter={false}>
-              <QuizzTake />
-            </Layout>
-          } />
-          
+          <Route
+            path="/quiz/:quizId/take"
+            element={
+              <Layout showFooter={false} showNavbar={false}>
+                <QuizzTake />
+              </Layout>
+            }
+          />
+
+
           <Route path="/quiz/:quizId/result" element={
             <Layout>
               <QuizResult />
             </Layout>
           } />
-          
+
           <Route path="/admin/users" element={
             <Layout>
               <UserList />

@@ -6,7 +6,7 @@ import Footer from '../Home/Footer/Footer';
 import LoginModal from '../Auth/LoginModal';
 import RegisterModal from '../Auth/RegisterModal';
 
-const Layout = ({ children, showFooter = true }) => {
+const Layout = ({ children, showFooter = true, showNavbar = true }) => {
   const {
     user,
     logout,
@@ -21,13 +21,15 @@ const Layout = ({ children, showFooter = true }) => {
 
   return (
     <>
-      {/* Navbar luôn hiển thị */}
-      <Navbar
-        user={user}
-        onLoginClick={openLogin}
-        onRegisterClick={openRegister}
-        onLogout={logout}
-      />
+       {/* Navbar (có thể tắt) */}
+      {showNavbar && (
+        <Navbar
+          user={user}
+          onLoginClick={openLogin}
+          onRegisterClick={openRegister}
+          onLogout={logout}
+        />
+      )}
 
       {/* Nội dung chính của từng trang */}
       <main>
