@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import React from 'react';
-import Navbar from './Navbar/Navbar';
 import Footer from './Footer/Footer';
 import Hero from '../Hero/Hero';
 import LoginModal from '../Auth/LoginModal';
@@ -18,18 +17,6 @@ const Home = () => {
 
   return (
     <>
-      <Navbar 
-        onLoginClick={() => {
-          console.log('Login clicked');
-          setShowLogin(true);
-          setShowRegister(false);
-        }}
-        onRegisterClick={() => {
-          setShowRegister(true);
-          setShowLogin(false);
-        }}
-      />
-
       <Hero />
 
       <LoginModal

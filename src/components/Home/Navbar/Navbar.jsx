@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect, useContext } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '../../../context/AuthContext';
 
 const Navbar = ({ onLoginClick, onRegisterClick }) => {
   const { user, logout } = useContext(AuthContext);
+  const location = useLocation(); // Lấy đường dẫn hiện tại
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
@@ -58,7 +59,7 @@ const Navbar = ({ onLoginClick, onRegisterClick }) => {
             
             {/* Desktop Menu */}
             <nav className="hidden md:flex items-center space-x-8">
-              <Link to="/" onClick={handleNavClick} className="font-medium hover:text-primary transition-colors border-b-2 border-primary pb-1">Trang chủ</Link>
+              <Link to="/" onClick={handleNavClick} className="font-medium hover:text-primary transition-colors border-b-2 border-transparent hover:border-primary pb-1">Trang chủ</Link>
               <Link to="/explore" onClick={handleNavClick} className="font-medium hover:text-primary transition-colors border-b-2 border-transparent hover:border-primary pb-1">Khám phá</Link>
               <Link to="/topics" onClick={handleNavClick} className="font-medium hover:text-primary transition-colors border-b-2 border-transparent hover:border-primary pb-1">Chủ đề</Link>
               <Link to="/about" onClick={handleNavClick} className="font-medium hover:text-primary transition-colors border-b-2 border-transparent hover:border-primary pb-1">Về chúng tôi</Link>
@@ -66,9 +67,9 @@ const Navbar = ({ onLoginClick, onRegisterClick }) => {
                 <Link
                   to="/admin"
                   onClick={handleNavClick}
-                  className="font-medium text-blue-500 hover:text-blue-700 transition-colors border-b-2 border-transparent hover:border-blue-500 pb-1"
+                  className={`font-medium transition-colors pb-1 ${location.pathname === '/admin' ? 'text-primary border-b-2 border-primary' : 'text-blue-500 hover:text-blue-700 border-transparent hover:border-blue-500'}`}
                 >
-                  Đi tới Dashboard Admin
+                  Admin Dashboard
                 </Link>
               )}
             </nav>
@@ -182,7 +183,7 @@ const Navbar = ({ onLoginClick, onRegisterClick }) => {
                 onClick={handleNavClick}
                 className="font-medium py-2 px-4 rounded hover:bg-blue-50 hover:text-primary transition-colors"
               >
-                Đi tới Dashboard Admin
+                Admin Dashboard
               </Link>
             )}
             <hr className="my-2" />
