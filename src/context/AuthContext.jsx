@@ -2,33 +2,86 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export const AuthContext = createContext();
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+  const [token, setToken] = useState(() => {
+    const savedToken = localStorage.getItem('token');
+    return savedToken || null;
+  });
+  const [showLogin, setShowLogin] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) setUser(JSON.parse(storedUser));
-  }, []);
+  // Xóa useEffect vì đã khởi tạo state từ localStorage
+  // useEffect(() => {
+  //   const savedToken = localStorage.getItem('token');
+  //   const savedUser = localStorage.getItem('user');
+  //   if (savedToken && savedUser) {
+  //     setToken(savedToken);
+  //     setUser(JSON.parse(savedUser));
+  //   }
+  // }, []);
 
-  const login = (loginData) => {
-    const { token, user: userData } = loginData;
-    localStorage.setItem('user', JSON.stringify(userData));
-    localStorage.setItem('token', token);
+  const login = (userData, userToken) => {
     setUser(userData);
+    setToken(userToken);
+    localStorage.setItem('token', userToken);
+    localStorage.setItem('user', JSON.stringify(userData));
   };
 
   const logout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
     setUser(null);
+    setToken(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  };
+
+  const openLogin = () => {
+    setShowLogin(true);
+    setShowRegister(false);
+  };
+
+  const openRegister = () => {
+    setShowRegister(true);
+    setShowLogin(false);
+  };
+
+  const closeModals = () => {
+    setShowLogin(false);
+    setShowRegister(false);
+  };
+
+  const switchToRegister = () => {
+    setShowLogin(false);
+    setShowRegister(true);
+  };
+
+  const switchToLogin = () => {
+    setShowRegister(false);
+    setShowLogin(true);
+  };
+
+  const value = {
+    user,
+    token,
+    login,
+    logout,
+    showLogin,
+    showRegister,
+    openLogin,
+    openRegister,
+    closeModals,
+    switchToRegister,
+    switchToLogin,
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
-}
-
+};
 // Thêm custom hook useAuth để truy cập context
 export const useAuth = () => useContext(AuthContext);

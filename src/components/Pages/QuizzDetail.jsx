@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext'; // Điều chỉnh đường dẫn
-import Navbar from '../Home/Navbar/Navbar';
-import Footer from '../Home/Footer/Footer';
-import LoginModal from '../../components/Auth/LoginModal'; // Điều chỉnh đường dẫn
+import { AuthContext } from '../../context/AuthContext';
 
 function QuizDetail() {
   const { quizId } = useParams();
   const navigate = useNavigate();
-  const { user } = useContext(AuthContext);
+  
+  // Lấy user và openLogin từ AuthContext
+  const { user, openLogin } = useContext(AuthContext);
+  
   const [quiz, setQuiz] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showStartModal, setShowStartModal] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
+  
 
   // Fetch quiz details từ API
   useEffect(() => {
@@ -38,12 +38,13 @@ function QuizDetail() {
     };
 
     fetchQuizDetail();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [quizId]);
 
   const handleStartQuiz = () => {
     // Kiểm tra đăng nhập
     if (!user) {
-      setShowLoginModal(true);
+      openLogin(); 
       return;
     }
     setShowStartModal(true);
@@ -56,14 +57,12 @@ function QuizDetail() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
         <div className="container mx-auto px-4 py-16 max-w-7xl flex justify-center items-center min-h-[60vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary mx-auto"></div>
             <p className="mt-4 text-gray-600">Đang tải thông tin quiz...</p>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -71,7 +70,6 @@ function QuizDetail() {
   if (!quiz) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
         <div className="container mx-auto px-4 py-16 max-w-7xl">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-800">Không tìm thấy quiz này</h2>
@@ -81,15 +79,12 @@ function QuizDetail() {
             </Link>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
-
       {/* Breadcrumb */}
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 py-3 max-w-7xl">
@@ -115,6 +110,12 @@ function QuizDetail() {
               <div className="p-6">
                 <h1 className="text-3xl font-bold text-gray-800 mb-3">{quiz.title}</h1>
                 <p className="text-gray-600 mb-4">{quiz.description}</p>
+                <div className="flex items-center text-sm text-gray-500">
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <span>{quiz.completions.toLocaleString()} lượt làm</span>
+                </div>
               </div>
             </div>
           </div>
@@ -123,15 +124,15 @@ function QuizDetail() {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-md p-6 sticky top-24">
               <h3 className="text-lg font-bold text-gray-800 mb-4">Thông tin quiz</h3>
-              
+
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Số câu hỏi:</span>
                   <span className="font-semibold">{quiz.questionCount} câu</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Lượt làm:</span>
-                  <span className="font-semibold">{quiz.completions.toLocaleString()} </span>
+                  <span className="text-gray-600">Thời gian:</span>
+                  <span className="font-semibold">{quiz.time.toLocaleString()} phút </span>
                 </div>
               </div>
 
@@ -145,14 +146,14 @@ function QuizDetail() {
                   </svg>
                   Bắt đầu làm bài
                 </button>
-                
+
                 <button className="w-full border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                   </svg>
                   Lưu vào yêu thích
                 </button>
-                
+
                 <button className="w-full border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
@@ -177,7 +178,7 @@ function QuizDetail() {
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">Bắt đầu làm bài?</h3>
               <p className="text-sm text-gray-500 mb-6">
-                Bạn sẽ hoàn thành {quiz.questionCount} câu hỏi. 
+                Bạn sẽ hoàn thành {quiz.questionCount} câu hỏi.
                 Hãy đảm bảo bạn đã sẵn sàng trước khi bắt đầu.
               </p>
               <div className="flex gap-3">
@@ -198,16 +199,6 @@ function QuizDetail() {
           </div>
         </div>
       )}
-
-      {/* Login Modal */}
-      {showLoginModal && (
-        <LoginModal 
-          isOpen={showLoginModal} 
-          onClose={() => setShowLoginModal(false)}
-        />
-      )}
-
-      <Footer />
     </div>
   );
 }

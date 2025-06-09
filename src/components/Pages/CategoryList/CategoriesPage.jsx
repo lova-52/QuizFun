@@ -36,36 +36,26 @@ function CategoriesPage() {
     };
 
     fetchCategories();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   // Hiển thị loading state
   if (loading) {
     return (
       <>
-        <Navbar 
-          onLoginClick={() => {}} 
-          onRegisterClick={() => {}} 
-        />
-        
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto mb-4"></div>
             <p className="text-gray-600">Đang tải danh mục...</p>
           </div>
         </div>
-        
-        <Footer />
       </>
     );
   }
 
   return (
     <>
-      <Navbar 
-        onLoginClick={() => {}} 
-        onRegisterClick={() => {}} 
-      />
-      
+    
       {/* Banner/Header */}
       <section className="bg-gradient-to-r from-indigo-500 to-purple-600 py-16 mb-12">
         <div className="container mx-auto px-4 max-w-7xl">
@@ -110,8 +100,6 @@ function CategoriesPage() {
           </div>
         </div>
       </section>
-
-      <Footer />
     </>
   );
 }
