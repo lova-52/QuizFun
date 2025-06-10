@@ -156,6 +156,7 @@ function CategoryQuizzes() {
               searchTerm={searchTerm}
               setSearchTerm={setSearchTerm}
               resetFilters={resetFilters}
+              quizzes={quizzes}
             />
           </div>
 
