@@ -318,7 +318,6 @@ app.get('/api/quizzes/:id/questions', async (req, res) => {
     });
   }
 });
-
 // API submit kết quả quiz
 app.post('/api/quizzes/:id/submit', async (req, res) => {
   try {
@@ -332,11 +331,6 @@ app.post('/api/quizzes/:id/submit', async (req, res) => {
       });
     }
 
-    // // In ra các thông tin request để debug
-    // console.log('Quiz ID:', id);
-    // console.log('Submit answers:', answers);
-    // console.log('Time spent:', timeSpent);
-    // console.log('User ID:', userId);
     // Kiểm tra xem userId có được cung cấp không
     if (!userId) {
       return res.status(400).json({ 
@@ -364,7 +358,6 @@ app.post('/api/quizzes/:id/submit', async (req, res) => {
       .from('questions')
       .select('id, answers (id, is_correct, is_personality)')
       .eq('quiz_id', id);
-
 
     if (questionsError) {
       return res.status(500).json({ 
@@ -449,16 +442,26 @@ app.post('/api/quizzes/:id/submit', async (req, res) => {
       return res.status(500).json({ success: false, message: 'Không thể cập nhật số lượt chơi' });
     }
 
-    // In ra toàn bộ data trong response để debug
-    console.log('Response data:', {
-      score,
-      totalQuestions,
-      timeSpent,
-      personalityType,
-      passed: score >= 60,
-      quizType: quiz.quiz_type 
-    });
 
+
+    // Ghi lại lịch sử làm quiz vào bảng user_quizzes
+    const { error: userQuizInsertError } = await supabase
+      .from('user_quizzes')
+      .insert([{
+        user_id: userId,
+        quiz_id: id,
+        quiz_type: quiz.quiz_type,
+        started_at: new Date().toISOString(), // Ghi thời gian bắt đầu (hoặc có thể lấy từ frontend)
+        finished_at: new Date().toISOString(), // Ghi thời gian kết thúc (hoặc lấy từ frontend)
+        result: JSON.stringify({ score, personalityType}) // Kết quả quiz
+      }]);
+
+    if (userQuizInsertError) {
+      console.error('Lỗi khi ghi lịch sử làm quiz:', userQuizInsertError);
+      // Không cần trả lỗi response ở đây, vì không ảnh hưởng đến trải nghiệm người dùng
+    }
+
+    // Trả kết quả
     return res.json({
       success: true,
       data: {
