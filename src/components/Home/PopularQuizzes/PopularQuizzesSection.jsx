@@ -44,7 +44,6 @@ function PopularQuizzesSection() {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/api/popular-quizzes`);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const result = await response.json();
-        console.log('API response:', result.data); // Log để kiểm tra dữ liệu
         if (result.success) {
           const topQuizzes = result.data.map(quiz => ({
             id: quiz.id,
