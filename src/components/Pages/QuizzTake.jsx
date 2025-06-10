@@ -172,6 +172,8 @@ function QuizzTake() {
       });
 
       const result = await response.json();
+      //In ra response để kiểm tra
+      console.log('Submit response:', result);
 
       if (result.success) {
         navigate(`/quiz/${quizId}/result`, {

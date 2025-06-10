@@ -42,8 +42,14 @@ function QuizResult() {
       ]
     };
 
+    // Kiểm tra state có dữ iệu không
+    console.log("Kiem tra state", location.state);
+
     const calculateResult = () => {
       if (!answers) return null;
+      
+      let score = 0;
+      let personalityCounts = {};
 
       const personalityTypes = {
         extrovert: { count: 0, label: 'Hướng ngoại', description: 'Bạn là người năng động, thích giao tiếp và làm việc với nhiều người.' },
