@@ -964,6 +964,65 @@ app.put('/api/admin/quizzes/:id', async (req, res) => {
 });
 
 
+// API cập nhật role user
+app.put('/api/admin/users/:id/role', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+
+    // Validate role
+    if (!role || !['admin', 'user'].includes(role)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Role không hợp lệ. Chỉ chấp nhận "admin" hoặc "user"' 
+      });
+    }
+
+    // Kiểm tra user tồn tại
+    const { data: existingUser, error: checkError } = await supabase
+      .from('user')
+      .select('id, role')
+      .eq('id', id)
+      .single();
+
+    if (checkError || !existingUser) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Không tìm thấy người dùng' 
+      });
+    }
+
+    // Cập nhật role
+    const { error: updateError } = await supabase
+      .from('user')
+      .update({ role: role })
+      .eq('id', id);
+
+    if (updateError) {
+      console.error('Lỗi khi cập nhật role:', updateError);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Cập nhật role thất bại' 
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: `Cập nhật role thành "${role}" thành công`,
+      data: { id, role }
+    });
+
+  } catch (error) {
+    console.error('Lỗi không mong muốn:', error);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Lỗi server' 
+    });
+  }
+});
+
+
+
 app.listen(PORT, () => {
   console.log(`Backend chạy tại http://localhost:${PORT}`);
 });
