@@ -20,12 +20,7 @@ const Features = () => {
             </div>
             <h3 className="text-xl font-bold mb-3">Trắc nghiệm cá nhân hóa</h3>
             <p className="text-gray-600 mb-4">Hệ thống trắc nghiệm thông minh với thuật toán phân tích giúp đưa ra kết quả chính xác và phù hợp với từng cá nhân.</p>
-            <a href="#" className="text-primary hover:text-darkPrimary font-medium flex items-center">
-              Tìm hiểu thêm
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </a>
+            
           </div>
           
           {/* Feature 2 */}
@@ -37,12 +32,7 @@ const Features = () => {
             </div>
             <h3 className="text-xl font-bold mb-3">Theo dõi tiến độ</h3>
             <p className="text-gray-600 mb-4">Chức năng theo dõi sự tiến bộ giúp bạn dễ dàng xem lại lịch sử và kết quả các bài trắc nghiệm đã làm.</p>
-            <a href="#" className="text-primary hover:text-darkPrimary font-medium flex items-center">
-              Tìm hiểu thêm
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </a>
+            
           </div>
           
           {/* Feature 3 */}
@@ -54,12 +44,7 @@ const Features = () => {
             </div>
             <h3 className="text-xl font-bold mb-3">Phân tích chi tiết</h3>
             <p className="text-gray-600 mb-4">Nhận báo cáo chi tiết về kết quả và đề xuất cải thiện dựa trên phân tích câu trả lời của bạn.</p>
-            <a href="#" className="text-primary hover:text-darkPrimary font-medium flex items-center">
-              Tìm hiểu thêm
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </a>
+            
           </div>
         </div>
       </div>

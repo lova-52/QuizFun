@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import Navbar from '../../Home/Navbar/Navbar';
-import Footer from '../../Home/Footer/Footer';
 import QuizCard from './QuizCard';
 import FilterSidebar from './FilterSidebar';
 
@@ -14,6 +12,7 @@ function CategoryQuizzes() {
 
   // Filter state
   const [selectedSort, setSelectedSort] = useState('popular');
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Sort options
   const sortOptions = [
@@ -66,6 +65,14 @@ function CategoryQuizzes() {
   useEffect(() => {
     let result = [...quizzes];
 
+    // Apply search filter
+    if (searchTerm.trim()) {
+      result = result.filter(quiz => 
+        quiz.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        quiz.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
     // Apply sorting
     switch (selectedSort) {
       case 'newest':
@@ -87,7 +94,12 @@ function CategoryQuizzes() {
     }
 
     setFilteredQuizzes(result);
-  }, [quizzes, selectedSort]);
+  }, [quizzes, selectedSort, searchTerm]);
+
+  const resetFilters = () => {
+    setSelectedSort('popular');
+    setSearchTerm('');
+  };
 
   if (loading) {
     return (
@@ -120,7 +132,6 @@ function CategoryQuizzes() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-
       {/* Banner */}
       <div
         className="relative h-48 md:h-64 w-full bg-center bg-cover"
@@ -136,30 +147,56 @@ function CategoryQuizzes() {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-12 max-w-7xl">
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar Filters - Hidden on mobile, visible on desktop */}
+          {/* Desktop Sidebar Filters */}
           <div className="lg:w-1/4 hidden lg:block">
             <FilterSidebar
               sortOptions={sortOptions}
               selectedSort={selectedSort}
               setSelectedSort={setSelectedSort}
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              resetFilters={resetFilters}
             />
           </div>
 
           {/* Main Content Area */}
           <div className="lg:w-3/4">
-            {/* Mobile Filters Toggle & Sort */}
-            <div className="lg:hidden flex flex-wrap items-center justify-between gap-4 mb-6">
-              <button className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow text-gray-700">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+            {/* Mobile Search and Sort */}
+            <div className="lg:hidden space-y-4 mb-6">
+              {/* Search Bar */}
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm quiz..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                />
+                <svg 
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-                <span>Bộ lọc</span>
-              </button>
-
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              
+              {/* Sort Dropdown */}
               <select
                 value={selectedSort}
                 onChange={(e) => setSelectedSort(e.target.value)}
-                className="bg-white px-4 py-2 rounded-lg shadow text-gray-700 focus:outline-none"
+                className="w-full bg-white px-3 py-2.5 rounded-lg border border-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary text-sm"
               >
                 {sortOptions.map(option => (
                   <option key={option.value} value={option.value}>
@@ -170,10 +207,15 @@ function CategoryQuizzes() {
             </div>
 
             {/* Results Count */}
-            <div className="flex justify-between items-center mb-6">
-              <p className="text-gray-600">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-2">
+              <p className="text-gray-600 text-sm sm:text-base">
                 Hiển thị <span className="font-semibold">{filteredQuizzes.length}</span> trong số <span className="font-semibold">{quizzes.length}</span> quiz
               </p>
+              {searchTerm && (
+                <p className="text-sm text-gray-500">
+                  Kết quả cho: "<span className="font-medium">{searchTerm}</span>"
+                </p>
+              )}
             </div>
 
             {/* Quiz Cards */}
@@ -196,12 +238,17 @@ function CategoryQuizzes() {
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <h3 className="text-xl font-bold text-gray-800 mb-2">Không tìm thấy quiz nào phù hợp</h3>
-                <p className="text-gray-600 mb-4">Vui lòng thử thay đổi bộ lọc hoặc quay lại sau.</p>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">
+                  {searchTerm ? 'Không tìm thấy quiz nào phù hợp' : 'Không có quiz nào'}
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  {searchTerm 
+                    ? `Không tìm thấy quiz nào chứa từ khóa "${searchTerm}". Vui lòng thử từ khóa khác.`
+                    : 'Vui lòng thử thay đổi bộ lọc hoặc quay lại sau.'
+                  }
+                </p>
                 <button
-                  onClick={() => {
-                    setSelectedSort('popular');
-                  }}
+                  onClick={resetFilters}
                   className="bg-primary hover:bg-darkPrimary text-white font-medium py-2 px-6 rounded-lg transition-colors"
                 >
                   Đặt lại bộ lọc

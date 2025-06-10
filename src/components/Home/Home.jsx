@@ -1,5 +1,6 @@
-// components/Home/Home.js
-import React from 'react';
+// Home.js
+import React, { useContext } from 'react';
+import { AuthContext } from '../../context/AuthContext';
 import Hero from '../Hero/Hero';
 import StatsSection from './Stats/StatsSection';
 import PopularQuizzesSection from './PopularQuizzes/PopularQuizzesSection';
@@ -9,6 +10,7 @@ import Testimonials from './Testimonials/Testimonials';
 import CTA from './CTA/CTA';
 
 const Home = () => {
+  const { openLogin, openRegister } = useContext(AuthContext);
   
   return (
     <>
@@ -18,7 +20,7 @@ const Home = () => {
       <PopularQuizzesSection />
       <Features />
       <Testimonials />
-      <CTA />
+      <CTA onLoginClick={openLogin} onRegisterClick={openRegister} />
     </>
   );
 };
