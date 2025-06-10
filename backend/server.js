@@ -332,11 +332,11 @@ app.post('/api/quizzes/:id/submit', async (req, res) => {
       });
     }
 
-    // In ra các thông tin request để debug
-    console.log('Quiz ID:', id);
-    console.log('Submit answers:', answers);
-    console.log('Time spent:', timeSpent);
-    console.log('User ID:', userId);
+    // // In ra các thông tin request để debug
+    // console.log('Quiz ID:', id);
+    // console.log('Submit answers:', answers);
+    // console.log('Time spent:', timeSpent);
+    // console.log('User ID:', userId);
     // Kiểm tra xem userId có được cung cấp không
     if (!userId) {
       return res.status(400).json({ 
@@ -364,6 +364,7 @@ app.post('/api/quizzes/:id/submit', async (req, res) => {
       .from('questions')
       .select('id, answers (id, is_correct, is_personality)')
       .eq('quiz_id', id);
+
 
     if (questionsError) {
       return res.status(500).json({ 
@@ -454,7 +455,8 @@ app.post('/api/quizzes/:id/submit', async (req, res) => {
       totalQuestions,
       timeSpent,
       personalityType,
-      passed: score >= 60
+      passed: score >= 60,
+      quizType: quiz.quiz_type 
     });
 
     return res.json({
@@ -464,7 +466,8 @@ app.post('/api/quizzes/:id/submit', async (req, res) => {
         totalQuestions,
         timeSpent,
         personalityType,
-        passed: score >= 60
+        passed: score >= 60,
+        quizType: quiz.quiz_type
       }
     });
 
