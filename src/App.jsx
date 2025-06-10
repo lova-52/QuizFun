@@ -11,6 +11,7 @@ import UserList from './components/Pages/Admin/UserList';
 import Layout from './components/Layout/layout';
 
 import AdminDashboard from './components/Pages/Admin/AdminDashboard';
+import QuizManagement from './components/Pages/Admin/QuizManagement'; // ← THÊM DÒNG NÀY
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginModal from './components/Auth/LoginModal';
 import { AuthProvider } from './context/AuthContext';
@@ -55,7 +56,6 @@ const App = () => {
             }
           />
 
-
           <Route path="/quiz/:quizId/result" element={
             <Layout>
               <QuizResult />
@@ -79,6 +79,18 @@ const App = () => {
               <ProtectedRoute requireAdmin={true}>
                 <Layout>
                   <AdminDashboard />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ← THÊM ROUTE NÀY */}
+          <Route
+            path="/admin/quizzes"
+            element={
+              <ProtectedRoute requireAdmin={true}>
+                <Layout>
+                  <QuizManagement />
                 </Layout>
               </ProtectedRoute>
             }
