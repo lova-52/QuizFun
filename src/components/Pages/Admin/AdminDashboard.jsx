@@ -23,7 +23,7 @@ const AdminDashboard = () => {
             <h2 className="text-xl font-semibold text-gray-700 mb-2">Quản lý Quiz</h2>
             <p className="text-gray-600">Quản lý các bài quiz và danh mục.</p>
             <Link
-              to="#"
+              to="/admin/quizzes"
               className="mt-4 inline-block text-blue-500 hover:text-blue-700 font-medium"
             >
               Đi tới →

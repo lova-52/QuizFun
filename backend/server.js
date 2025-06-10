@@ -582,6 +582,202 @@ app.delete('/api/users/:id', async (req, res) => {
   }
 });
 
+// API lấy tất cả quizzes cho admin
+app.get('/api/admin/quizzes', async (req, res) => {
+  try {
+    const { data: quizzes, error } = await supabase
+      .from('quizzes')
+      .select(`
+        *,
+        categories (name)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Lỗi khi lấy quizzes:', error);
+      return res.status(500).json({ message: 'Lỗi server khi lấy danh sách quizzes' });
+    }
+
+    const formattedQuizzes = await Promise.all(quizzes.map(async (quiz) => {
+      let imageUrl = null;
+      if (quiz.image_url) {
+        const { data } = supabase.storage
+          .from('project-bucket')
+          .getPublicUrl(quiz.image_url);
+        imageUrl = data.publicUrl;
+      }
+
+      return {
+        id: quiz.id,
+        title: quiz.title,
+        description: quiz.description,
+        categoryName: quiz.categories?.name || 'Unknown Category',
+        categoryId: quiz.category_id,
+        image: imageUrl,
+        totalQuestions: quiz.total_questions || 0,
+        playCount: quiz.play_count || 0,
+        timeLimit: quiz.time_limit,
+        quizType: quiz.quiz_type,
+        createdAt: quiz.created_at,
+      };
+    }));
+
+    return res.json({
+      success: true,
+      data: formattedQuizzes,
+    });
+  } catch (error) {
+    console.error('Lỗi không mong muốn:', error);
+    return res.status(500).json({ message: 'Lỗi server' });
+  }
+});
+
+// API xóa quiz
+app.delete('/api/admin/quizzes/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Xóa user_answers trước
+    const { error: userAnswersError } = await supabase
+      .from('user_answers')
+      .delete()
+      .in('question_id', 
+        (await supabase.from('questions').select('id').eq('quiz_id', id)).data?.map(q => q.id) || []
+      );
+
+    // Xóa user_quizzes
+    const { error: userQuizzesError } = await supabase
+      .from('user_quizzes')
+      .delete()
+      .eq('quiz_id', id);
+
+    // Xóa answers
+    const { error: answersError } = await supabase
+      .from('answers')
+      .delete()
+      .in('question_id', 
+        (await supabase.from('questions').select('id').eq('quiz_id', id)).data?.map(q => q.id) || []
+      );
+
+    // Xóa questions
+    const { error: questionsError } = await supabase
+      .from('questions')
+      .delete()
+      .eq('quiz_id', id);
+
+    // Cuối cùng xóa quiz
+    const { error: quizError } = await supabase
+      .from('quizzes')
+      .delete()
+      .eq('id', id);
+
+    if (quizError) {
+      console.error('Lỗi khi xóa quiz:', quizError);
+      return res.status(500).json({ success: false, message: 'Xóa quiz thất bại' });
+    }
+
+    return res.json({ success: true, message: 'Xóa quiz thành công' });
+  } catch (err) {
+    console.error('Lỗi server không mong muốn:', err);
+    return res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
+// API tạo quiz mới
+app.post('/api/admin/quizzes', async (req, res) => {
+  try {
+    const { title, description, categoryId, timeLimit, quizType, questions } = req.body;
+
+    if (!title || !description || !categoryId || !questions || questions.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Vui lòng nhập đầy đủ thông tin quiz' 
+      });
+    }
+
+    // Tạo quiz mới
+    const { data: newQuiz, error: quizError } = await supabase
+      .from('quizzes')
+      .insert([{
+        title,
+        description,
+        category_id: categoryId,
+        time_limit: timeLimit || 0,
+        quiz_type: quizType || 'iq',
+        total_questions: questions.length
+      }])
+      .select()
+      .single();
+
+    if (quizError) {
+      console.error('Lỗi khi tạo quiz:', quizError);
+      return res.status(500).json({ success: false, message: 'Tạo quiz thất bại' });
+    }
+
+    // Tạo questions và answers
+    for (let i = 0; i < questions.length; i++) {
+      const question = questions[i];
+      
+      const { data: newQuestion, error: questionError } = await supabase
+        .from('questions')
+        .insert([{
+          quiz_id: newQuiz.id,
+          content: question.content,
+          type: question.type || 'single_choice',
+          order: i + 1
+        }])
+        .select()
+        .single();
+
+      if (questionError) {
+        console.error('Lỗi khi tạo question:', questionError);
+        continue;
+      }
+
+      // Tạo answers cho question
+      const answersToInsert = question.answers.map(answer => ({
+        question_id: newQuestion.id,
+        content: answer.content,
+        is_correct: answer.isCorrect || false,
+        is_personality: answer.isPersonality || null
+      }));
+
+      const { error: answersError } = await supabase
+        .from('answers')
+        .insert(answersToInsert);
+
+      if (answersError) {
+        console.error('Lỗi khi tạo answers:', answersError);
+      }
+    }
+
+    // Cập nhật total_quizzes trong category
+    const { data: category } = await supabase
+      .from('categories')
+      .select('total_quizzes')
+      .eq('id', categoryId)
+      .single();
+
+    if (category) {
+      await supabase
+        .from('categories')
+        .update({ total_quizzes: (category.total_quizzes || 0) + 1 })
+        .eq('id', categoryId);
+    }
+
+    return res.json({
+      success: true,
+      message: 'Tạo quiz thành công',
+      data: newQuiz
+    });
+
+  } catch (error) {
+    console.error('Lỗi không mong muốn:', error);
+    return res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
+
 app.listen(PORT, () => {
   console.log(`Backend chạy tại http://localhost:${PORT}`);
 });
