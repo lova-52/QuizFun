@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import EditUserModal from './EditUserModal'; // ← THÊM IMPORT
 
 const UserList = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false); // ← THÊM STATE
+  const [editingUser, setEditingUser] = useState(null); // ← THÊM STATE
 
   useEffect(() => {
     fetch('http://localhost:5000/api/users')
@@ -46,6 +49,23 @@ const UserList = () => {
     }
   };
 
+  // ← THÊM FUNCTION
+  const handleEdit = (user) => {
+    setEditingUser(user);
+    setShowEditModal(true);
+  };
+
+  // ← THÊM FUNCTION
+  const handleUpdateUser = (userId, newRole) => {
+    setUsers(users.map(user => 
+      user.id === userId 
+        ? { ...user, role: newRole }
+        : user
+    ));
+    setShowEditModal(false);
+    setEditingUser(null);
+  };
+
   if (loading) return <div className="text-center py-4">Đang tải dữ liệu...</div>;
   if (error) return <div className="text-red-500 text-center py-4">{error}</div>;
 
@@ -66,9 +86,21 @@ const UserList = () => {
             <tr key={user.id} className="border-t hover:bg-gray-50">
               <td className="px-4 py-2">{user.name}</td>
               <td className="px-4 py-2">{user.email}</td>
-              <td className="px-4 py-2 capitalize">{user.role}</td>
+              <td className="px-4 py-2">
+                <span className={`capitalize px-2 py-1 rounded-full text-xs font-medium ${
+                  user.role === 'admin' 
+                    ? 'bg-red-100 text-red-800' 
+                    : 'bg-green-100 text-green-800'
+                }`}>
+                  {user.role}
+                </span>
+              </td>
               <td className="px-4 py-2 text-center">
-                <button className="text-blue-500 hover:text-blue-700 mr-4">
+                {/* ← SỬA BUTTON SỬA */}
+                <button 
+                  onClick={() => handleEdit(user)}
+                  className="text-blue-500 hover:text-blue-700 mr-4"
+                >
                   Sửa
                 </button>
                 <button
@@ -88,6 +120,18 @@ const UserList = () => {
           ))}
         </tbody>
       </table>
+
+      {/* ← THÊM EDIT MODAL */}
+      {showEditModal && editingUser && (
+        <EditUserModal
+          user={editingUser}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingUser(null);
+          }}
+          onUpdate={handleUpdateUser}
+        />
+      )}
     </div>
   );
 };
