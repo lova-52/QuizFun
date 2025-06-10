@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import AddQuizModal from './AddQuizModal';
+import EditQuizModal from './EditQuizModal'; // ← THÊM IMPORT
 
 const QuizManagement = () => {
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false); // ← THÊM STATE
+  const [editingQuizId, setEditingQuizId] = useState(null); // ← THÊM STATE
 
   useEffect(() => {
     fetchQuizzes();
@@ -54,6 +57,19 @@ const QuizManagement = () => {
     setShowAddModal(false);
   };
 
+  // ← THÊM FUNCTION
+  const handleEditQuiz = (quizId) => {
+    setEditingQuizId(quizId);
+    setShowEditModal(true);
+  };
+
+  // ← THÊM FUNCTION
+  const handleUpdateQuiz = () => {
+    fetchQuizzes(); // Refresh danh sách
+    setShowEditModal(false);
+    setEditingQuizId(null);
+  };
+
   if (loading) return <div className="text-center py-4">Đang tải dữ liệu...</div>;
   if (error) return <div className="text-red-500 text-center py-4">{error}</div>;
 
@@ -97,7 +113,11 @@ const QuizManagement = () => {
                 <td className="px-4 py-2">{quiz.playCount}</td>
                 <td className="px-4 py-2 capitalize">{quiz.quizType}</td>
                 <td className="px-4 py-2 text-center">
-                  <button className="text-blue-500 hover:text-blue-700 mr-4">
+                  {/* ← SỬA BUTTON SỬA */}
+                  <button 
+                    onClick={() => handleEditQuiz(quiz.id)}
+                    className="text-blue-500 hover:text-blue-700 mr-4"
+                  >
                     Sửa
                   </button>
                   <button
@@ -123,6 +143,18 @@ const QuizManagement = () => {
         <AddQuizModal
           onClose={() => setShowAddModal(false)}
           onAdd={handleAddQuiz}
+        />
+      )}
+
+      {/* ← THÊM EDIT MODAL */}
+      {showEditModal && (
+        <EditQuizModal
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingQuizId(null);
+          }}
+          onUpdate={handleUpdateQuiz}
+          quizId={editingQuizId}
         />
       )}
     </div>
