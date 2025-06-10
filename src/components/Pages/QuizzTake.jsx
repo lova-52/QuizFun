@@ -193,7 +193,8 @@ function QuizzTake() {
             totalQuestions: questions.length,
             completionRate,
             timeSpent: (quiz.timeLimit * 60) - timeLeft,
-            quizTitle: quiz.title
+            quizTitle: quiz.title,
+            quizType: quiz.type
           }
         });
       }
@@ -208,7 +209,8 @@ function QuizzTake() {
           totalQuestions: questions.length,
           completionRate,
           timeSpent: (quiz.timeLimit * 60) - timeLeft,
-          quizTitle: quiz.title
+          quizTitle: quiz.title,
+          quizType: quiz.type
         }
       });
     }

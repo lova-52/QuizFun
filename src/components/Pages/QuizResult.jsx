@@ -11,12 +11,14 @@ function QuizResult() {
   const [loading, setLoading] = useState(true);
 
   console.log("Kiem tra state", location.state);
-  const { totalQuestions, completionRate, timeSpent, personalityType, score } = location.state || {};
+  // Kiem tra state: passed : false personalityType : "balanced" quizTitle : "Thử thách nhanh trí" quizType : "iq" score : 0 timeSpent : 3 totalQuestions : 3
+  const { totalQuestions, completionRate, timeSpent, personalityType, score, quizType, quizTitle } = location.state || {};
 
   useEffect(() => {
+    // Mock data quiz
     const mockQuiz = {
       id: quizId,
-      title: 'Bạn thuộc nhóm tính cách nào?',
+      title: quizTitle,
       questions: [
         {
           id: 1,
@@ -43,7 +45,29 @@ function QuizResult() {
       ]
     };
 
+    // Tính toán kết quả quiz (IQ hoặc Personality)
     const calculateResult = () => {
+      if (quizType === "iq") {
+        return calculateIQResult();
+      } else if (quizType === "personality") {
+        return calculatePersonalityResult();
+      }
+    };
+
+    const calculateIQResult = () => {
+      if (!score || totalQuestions === undefined) return null;
+
+      return {
+        personalityType: {
+          label: "IQ",
+          description: "Bài kiểm tra IQ của bạn.",
+        },
+        score: score,
+        breakdown: {},  // IQ không có breakdown chi tiết
+      };
+    };
+
+    const calculatePersonalityResult = () => {
       if (!personalityType || score === undefined) return null;
 
       const personalityTypes = {
@@ -91,7 +115,7 @@ function QuizResult() {
       setResult(calculateResult());
       setLoading(false);
     }, 1000);
-  }, [quizId, personalityType, score]);
+  }, [quizId, personalityType, score, quizType, quizTitle, totalQuestions]);
 
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
@@ -104,11 +128,11 @@ function QuizResult() {
   };
 
   const handleSendEmail = () => {
-    const subject = encodeURIComponent(`Kết quả Quiz: ${quiz?.title}`);
+    const subject = encodeURIComponent(`Kết quả Quiz: ${quizTitle}`);
     const body = encodeURIComponent(`
 Chào bạn,
 
-Tôi vừa hoàn thành bài quiz "${quiz?.title}" với kết quả sau:
+Tôi vừa hoàn thành bài quiz "${quizTitle}" với kết quả sau:
 
 🎯 Nhóm tính cách: ${result?.personalityType.label}
 📊 Điểm số: ${result?.score}%
@@ -127,7 +151,7 @@ Trân trọng!
     const content = `
       <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto;">
         <h1 style="text-align: center; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
-          Kết quả Quiz: ${quiz?.title}
+          Kết quả Quiz: ${quizTitle}
         </h1>
         <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h2 style="color: #007bff; text-align: center;">Nhóm tính cách: ${result?.personalityType.label}</h2>
@@ -152,7 +176,7 @@ Trân trọng!
     printWindow.document.write(`
       <html>
         <head>
-          <title>Kết quả Quiz - ${quiz?.title}</title>
+          <title>Kết quả Quiz - ${quizTitle}</title>
           <style>
             @media print {
               body { margin: 0; }
@@ -212,22 +236,24 @@ Trân trọng!
             <span className="text-xl font-bold text-primary">{result?.score}%</span>
           </div>
           <h2 className="text-xl font-bold text-gray-800 mb-2">
-            Nhóm tính cách: {result?.personalityType.label}
+            {quizType === 'personality' ? `Nhóm tính cách: ${result?.personalityType.label}` : `Điểm của bạn: ${result?.score}%`}
           </h2>
           <p className="text-gray-600 leading-relaxed max-w-xl mx-auto text-sm">
-            {result?.personalityType.description}
+            {quizType === 'personality' ? result?.personalityType.description : "Đây là kết quả của bạn."}
           </p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-4 mb-6">
-          <div className="bg-blue-50 rounded-lg p-4">
-            <h3 className="font-semibold text-blue-800 mb-2 text-sm">Thông tin tính cách</h3>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-blue-700 text-sm">{result?.personalityType.label}</span>
+          {quizType === 'personality' ? (
+            <div className="bg-blue-50 rounded-lg p-4">
+              <h3 className="font-semibold text-blue-800 mb-2 text-sm">Thông tin tính cách</h3>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-blue-700 text-sm">{result?.personalityType.label}</span>
+                </div>
               </div>
             </div>
-          </div>
+          ) : null}
 
           <div className="bg-green-50 rounded-lg p-4">
             <h3 className="font-semibold text-green-800 mb-2 text-sm">Thống kê bài làm</h3>
