@@ -11,6 +11,9 @@ const AddQuizModal = ({ onClose, onAdd }) => {
   });
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [imageFile, setImageFile] = useState(null); // ← THÊM STATE
+  const [imagePreview, setImagePreview] = useState(null); // ← THÊM STATE
+  const [uploadingImage, setUploadingImage] = useState(false); // ← THÊM STATE
 
   useEffect(() => {
     // Lấy danh sách categories
@@ -23,6 +26,51 @@ const AddQuizModal = ({ onClose, onAdd }) => {
       })
       .catch(console.error);
   }, []);
+
+  // ← THÊM FUNCTION XỬ LÝ UPLOAD HÌNH ẢNH
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      
+      // Tạo preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // ← THÊM FUNCTION UPLOAD HÌNH ẢNH
+  const uploadImage = async () => {
+    if (!imageFile) return null;
+
+    setUploadingImage(true);
+    const formData = new FormData();
+    formData.append('quizImage', imageFile);
+
+    try {
+      const response = await fetch('http://localhost:5000/api/admin/quizzes/upload-image', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        return data.data.filePath; // Return file path to save in database
+      } else {
+        alert(data.message || 'Upload hình ảnh thất bại');
+        return null;
+      }
+    } catch (error) {
+      alert('Lỗi upload hình ảnh');
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const addQuestion = () => {
     setQuestions([...questions, {
@@ -79,6 +127,16 @@ const AddQuizModal = ({ onClose, onAdd }) => {
     setLoading(true);
 
     try {
+      // Upload hình ảnh trước (nếu có)
+      let imageUrl = null;
+      if (imageFile) {
+        imageUrl = await uploadImage();
+        if (!imageUrl) {
+          setLoading(false);
+          return; // Dừng nếu upload thất bại
+        }
+      }
+
       const response = await fetch('http://localhost:5000/api/admin/quizzes', {
         method: 'POST',
         headers: {
@@ -86,7 +144,8 @@ const AddQuizModal = ({ onClose, onAdd }) => {
         },
         body: JSON.stringify({
           ...formData,
-          questions
+          questions,
+          imageUrl // ← THÊM IMAGE URL
         }),
       });
 
@@ -183,6 +242,31 @@ const AddQuizModal = ({ onClose, onAdd }) => {
               />
             </div>
 
+            {/* ← THÊM PHẦN UPLOAD HÌNH ẢNH */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium mb-1">Hình ảnh Quiz</label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="w-full"
+                />
+                {imagePreview && (
+                  <div className="mt-3">
+                    <img 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      className="max-w-xs max-h-32 object-cover rounded"
+                    />
+                  </div>
+                )}
+                <p className="text-sm text-gray-500 mt-2">
+                  Chấp nhận: JPG, PNG, GIF, WEBP. Tối đa 5MB.
+                </p>
+              </div>
+            </div>
+
             {/* Questions */}
             <div className="mb-6">
               <div className="flex justify-between items-center mb-4">
@@ -239,7 +323,7 @@ const AddQuizModal = ({ onClose, onAdd }) => {
                             placeholder="Personality"
                             value={answer.isPersonality}
                             onChange={(e) => updateAnswer(qIndex, aIndex, 'isPersonality', e.target.value)}
-                            className="w-20 border border-gray-300 rounded px-2 py-1"
+                            className="w-32 border border-gray-300 rounded px-2 py-1" // ← SỬA TỪ w-20 THÀNH w-32
                           />
                         )}
                       </div>
@@ -260,10 +344,10 @@ const AddQuizModal = ({ onClose, onAdd }) => {
               </button>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || uploadingImage}
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
               >
-                {loading ? 'Đang tạo...' : 'Tạo Quiz'}
+                {loading ? 'Đang tạo...' : uploadingImage ? 'Đang upload...' : 'Tạo Quiz'}
               </button>
             </div>
           </form>
