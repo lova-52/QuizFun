@@ -1022,6 +1022,132 @@ app.put('/api/admin/users/:id/role', async (req, res) => {
 });
 
 
+// API lấy thống kê quiz của một user
+console.log("API statistics endpoint loaded!");
+
+app.get('/api/admin/users/:id/statistics', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Lấy thông tin user
+    const { data: user, error: userError } = await supabase
+      .from('user')
+      .select('id, name, email, role, created_at')
+      .eq('id', id)
+      .single();
+
+    if (userError || !user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy người dùng'
+      });
+    }
+
+    // Lấy tất cả quiz đã chơi của user này với thông tin quiz
+    const { data: userQuizzes, error: quizzesError } = await supabase
+      .from('user_quizzes')
+      .select(`
+        id,
+        quiz_id,
+        started_at,
+        finished_at,
+        result,
+        created_at,
+        quiz_type,
+        quizzes (
+          id,
+          title,
+          description,
+          categories (
+            name
+          )
+        )
+      `)
+      .eq('user_id', id)
+      .order('created_at', { ascending: false });
+
+    if (quizzesError) {
+      console.error('Lỗi khi lấy user_quizzes:', quizzesError);
+      return res.status(500).json({
+        success: false,
+        message: 'Lỗi server khi lấy dữ liệu quiz'
+      });
+    }
+
+    // Tính toán thống kê
+    const totalQuizzes = userQuizzes.length;
+    let totalTimeSpent = 0;
+    let completedQuizzes = 0;
+    const quizTypes = { iq: 0, personality: 0 };
+    const recentQuizzes = userQuizzes.slice(0, 5); // 5 quiz gần nhất
+
+    userQuizzes.forEach(quiz => {
+      // Tính thời gian làm bài (nếu có started_at và finished_at)
+      if (quiz.started_at && quiz.finished_at) {
+        const startTime = new Date(quiz.started_at);
+        const endTime = new Date(quiz.finished_at);
+        const timeSpent = (endTime - startTime) / 1000 / 60; // phút
+        if (timeSpent > 0 && timeSpent < 1440) { // Loại bỏ thời gian bất thường (>24h)
+          totalTimeSpent += timeSpent;
+        }
+      }
+
+      // Đếm quiz hoàn thành
+      if (quiz.result) {
+        completedQuizzes++;
+      }
+
+      // Đếm loại quiz
+      if (quiz.quiz_type) {
+        quizTypes[quiz.quiz_type] = (quizTypes[quiz.quiz_type] || 0) + 1;
+      }
+    });
+
+    const avgTimePerQuiz = totalQuizzes > 0 ? Math.round(totalTimeSpent / totalQuizzes) : 0;
+
+    return res.json({
+      success: true,
+      data: {
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          joinedAt: user.created_at
+        },
+        statistics: {
+          totalQuizzes,
+          completedQuizzes,
+          totalTimeSpent: Math.round(totalTimeSpent),
+          avgTimePerQuiz,
+          quizTypes
+        },
+        recentQuizzes: recentQuizzes.map(quiz => ({
+          id: quiz.id,
+          quizId: quiz.quiz_id,
+          quizTitle: quiz.quizzes?.title || 'Unknown Quiz',
+          quizCategory: quiz.quizzes?.categories?.name || 'Unknown Category',
+          startedAt: quiz.started_at,
+          finishedAt: quiz.finished_at,
+          result: quiz.result,
+          quizType: quiz.quiz_type,
+          timeSpent: quiz.started_at && quiz.finished_at 
+            ? Math.round((new Date(quiz.finished_at) - new Date(quiz.started_at)) / 1000 / 60)
+            : null,
+          createdAt: quiz.created_at
+        }))
+      }
+    });
+
+  } catch (error) {
+    console.error('Lỗi không mong muốn:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Lỗi server'
+    });
+  }
+});
+
 
 app.listen(PORT, () => {
   console.log(`Backend chạy tại http://localhost:${PORT}`);
