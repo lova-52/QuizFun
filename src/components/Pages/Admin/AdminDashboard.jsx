@@ -29,21 +29,11 @@ const AdminDashboard = () => {
               Đi tới →
             </Link>
           </div>
-          {/* Card Thống kê */}
-          <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-            <h2 className="text-xl font-semibold text-gray-700 mb-2">Thống kê</h2>
-            <p className="text-gray-600">Xem báo cáo và phân tích dữ liệu.</p>
-            <Link
-              to="#"
-              className="mt-4 inline-block text-blue-500 hover:text-blue-700 font-medium"
-            >
-              Đi tới →
-            </Link>
-          </div>
         </div>
       </main>
     </div>
   );
 };
+//test
 
 export default AdminDashboard;
