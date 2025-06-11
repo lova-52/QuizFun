@@ -77,10 +77,20 @@ const EditQuizModal = ({ onClose, onUpdate, quizId }) => {
   };
 
   const updateAnswer = (questionIndex, answerIndex, field, value) => {
-    const newQuestions = [...questions];
-    newQuestions[questionIndex].answers[answerIndex][field] = value;
-    setQuestions(newQuestions);
-  };
+  const newQuestions = [...questions];
+  newQuestions[questionIndex].answers[answerIndex][field] = value;
+  
+  // ← THÊM: Auto-detect question type dựa trên số đáp án đúng
+  if (field === 'isCorrect') {
+    const correctCount = newQuestions[questionIndex].answers.filter(a => a.isCorrect).length;
+    newQuestions[questionIndex].type = correctCount > 1 ? 'multi_choice' : 'single_choice';
+    
+    console.log(`Question ${questionIndex + 1}: ${correctCount} correct answers -> ${newQuestions[questionIndex].type}`);
+  }
+  
+  setQuestions(newQuestions);
+};
+
 
   const handleQuestionImageChange = (e, questionIndex) => {
     const file = e.target.files[0];
