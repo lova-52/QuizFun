@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import EditUserModal from './EditUserModal'; // ← THÊM IMPORT
+import EditUserModal from './EditUserModal';
+import UserStatisticsModal from './UserStatisticsModal'; // ← THÊM IMPORT
 
 const UserList = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showEditModal, setShowEditModal] = useState(false); // ← THÊM STATE
-  const [editingUser, setEditingUser] = useState(null); // ← THÊM STATE
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [showStatsModal, setShowStatsModal] = useState(false); // ← THÊM STATE
+  const [viewingUserId, setViewingUserId] = useState(null); // ← THÊM STATE
 
   useEffect(() => {
     fetch('http://localhost:5000/api/users')
@@ -26,7 +29,8 @@ const UserList = () => {
   }, []);
 
   const handleView = (userId) => {
-    console.log(`Xem kết quả của người dùng với ID: ${userId}`);
+    setViewingUserId(userId);
+    setShowStatsModal(true);
   };
 
   const handleDelete = async (userId) => {
@@ -49,13 +53,11 @@ const UserList = () => {
     }
   };
 
-  // ← THÊM FUNCTION
   const handleEdit = (user) => {
     setEditingUser(user);
     setShowEditModal(true);
   };
 
-  // ← THÊM FUNCTION
   const handleUpdateUser = (userId, newRole) => {
     setUsers(users.map(user => 
       user.id === userId 
@@ -96,7 +98,6 @@ const UserList = () => {
                 </span>
               </td>
               <td className="px-4 py-2 text-center">
-                {/* ← SỬA BUTTON SỬA */}
                 <button 
                   onClick={() => handleEdit(user)}
                   className="text-blue-500 hover:text-blue-700 mr-4"
@@ -109,6 +110,7 @@ const UserList = () => {
                 >
                   Xóa
                 </button>
+                {/* ← SỬA BUTTON XEM */}
                 <button
                   className="text-green-500 hover:text-green-700"
                   onClick={() => handleView(user.id)}
@@ -121,7 +123,7 @@ const UserList = () => {
         </tbody>
       </table>
 
-      {/* ← THÊM EDIT MODAL */}
+      {/* Edit Modal */}
       {showEditModal && editingUser && (
         <EditUserModal
           user={editingUser}
@@ -130,6 +132,17 @@ const UserList = () => {
             setEditingUser(null);
           }}
           onUpdate={handleUpdateUser}
+        />
+      )}
+
+      {/* ← THÊM STATISTICS MODAL */}
+      {showStatsModal && viewingUserId && (
+        <UserStatisticsModal
+          userId={viewingUserId}
+          onClose={() => {
+            setShowStatsModal(false);
+            setViewingUserId(null);
+          }}
         />
       )}
     </div>
