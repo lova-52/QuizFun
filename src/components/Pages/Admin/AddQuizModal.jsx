@@ -73,17 +73,76 @@ const AddQuizModal = ({ onClose, onAdd }) => {
   };
 
   const addQuestion = () => {
-    setQuestions([...questions, {
-      content: '',
-      type: 'single_choice',
-      answers: [
-        { content: '', isCorrect: false, isPersonality: '' },
-        { content: '', isCorrect: false, isPersonality: '' },
-        { content: '', isCorrect: false, isPersonality: '' },
-        { content: '', isCorrect: false, isPersonality: '' }
-      ]
-    }]);
-  };
+  setQuestions([...questions, {
+    content: '',
+    type: 'single_choice',
+    imageFile: null,        // ← THÊM
+    imagePreview: null,     // ← THÊM
+    imageUrl: null,         // ← THÊM
+    answers: [
+      { content: '', isCorrect: false, isPersonality: '' },
+      { content: '', isCorrect: false, isPersonality: '' },
+      { content: '', isCorrect: false, isPersonality: '' },
+      { content: '', isCorrect: false, isPersonality: '' }
+    ]
+  }]);
+};
+// ← THÊM: Function xử lý upload ảnh câu hỏi
+const handleQuestionImageChange = (e, questionIndex) => {
+  const file = e.target.files[0];
+  if (file) {
+    // Tạo preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      updateQuestion(questionIndex, 'imagePreview', e.target.result);
+      updateQuestion(questionIndex, 'imageFile', file);
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+// ← THÊM: Function xóa ảnh câu hỏi
+const removeQuestionImage = (questionIndex) => {
+  updateQuestion(questionIndex, 'imagePreview', null);
+  updateQuestion(questionIndex, 'imageFile', null);
+  updateQuestion(questionIndex, 'imageUrl', null);
+};
+
+// ← THÊM: Function upload ảnh lên server
+const uploadQuestionImage = async (file) => {
+  if (!file) return null;
+
+  // ← SỬA: Kiểm tra kích thước file trước khi upload
+  if (file.size > 5 * 1024 * 1024) { // 5MB
+    alert('Kích thước ảnh không được vượt quá 5MB');
+    return null;
+  }
+
+  const formData = new FormData();
+  formData.append('questionImage', file);
+
+  try {
+    const response = await fetch('http://localhost:5000/api/admin/questions/upload-image', {
+      method: 'POST',
+      body: formData // Gửi FormData, không phải JSON
+    });
+
+    const data = await response.json();
+    
+    if (data.success) {
+      return data.data.filePath; // Trả về file path
+    } else {
+      alert(data.message || 'Upload hình ảnh thất bại');
+      return null;
+    }
+  } catch (error) {
+    console.error('Error uploading question image:', error);
+    alert('Lỗi upload hình ảnh câu hỏi');
+    return null;
+  }
+};
+
+
 
   const updateQuestion = (index, field, value) => {
     const newQuestions = [...questions];
@@ -126,43 +185,79 @@ const AddQuizModal = ({ onClose, onAdd }) => {
 
     setLoading(true);
 
-    try {
-      // Upload hình ảnh trước (nếu có)
-      let imageUrl = null;
-      if (imageFile) {
-        imageUrl = await uploadImage();
-        if (!imageUrl) {
-          setLoading(false);
-          return; // Dừng nếu upload thất bại
-        }
+  try {
+    // ← SỬA: Upload ảnh quiz trước (nếu có)
+    let quizImageUrl = null;
+    if (imageFile) {
+      quizImageUrl = await uploadImage();
+      if (!quizImageUrl) {
+        setLoading(false);
+        return;
       }
-
-      const response = await fetch('http://localhost:5000/api/admin/quizzes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          questions,
-          imageUrl // ← THÊM IMAGE URL
-        }),
-      });
-
-      const data = await response.json();
-      
-      if (data.success) {
-        onAdd(data.data);
-        alert('Tạo quiz thành công!');
-      } else {
-        alert(data.message || 'Tạo quiz thất bại');
-      }
-    } catch (error) {
-      alert('Lỗi khi kết nối đến server');
     }
 
-    setLoading(false);
-  };
+    // ← SỬA: Upload ảnh cho từng câu hỏi trước
+    const questionsWithImages = [];
+    
+    for (let i = 0; i < questions.length; i++) {
+      const question = questions[i];
+      let questionImageUrl = null;
+      
+      // Upload ảnh câu hỏi nếu có
+      if (question.imageFile) {
+        questionImageUrl = await uploadQuestionImage(question.imageFile);
+        if (!questionImageUrl) {
+          alert(`Lỗi upload ảnh câu hỏi ${i + 1}`);
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // Tạo question object KHÔNG chứa file
+      questionsWithImages.push({
+        content: question.content,
+        type: question.type,
+        imageUrl: questionImageUrl, // Chỉ gửi URL, không gửi file
+        answers: question.answers.map(answer => ({
+          content: answer.content,
+          isCorrect: answer.isCorrect,
+          isPersonality: answer.isPersonality
+        }))
+      });
+    }
+
+    // ← SỬA: Gửi request KHÔNG chứa file, chỉ chứa URL
+    const response = await fetch('http://localhost:5000/api/admin/quizzes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title: formData.title,
+        description: formData.description,
+        categoryId: formData.categoryId,
+        timeLimit: formData.timeLimit,
+        quizType: formData.quizType,
+        questions: questionsWithImages, // ← Chỉ chứa URL, không chứa file
+        imageUrl: quizImageUrl
+      }),
+    });
+
+    const data = await response.json();
+    
+    if (data.success) {
+      onAdd(data.data);
+      alert('Tạo quiz thành công!');
+    } else {
+      alert(data.message || 'Tạo quiz thất bại');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Lỗi khi kết nối đến server');
+  }
+
+  setLoading(false);
+};
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -280,57 +375,87 @@ const AddQuizModal = ({ onClose, onAdd }) => {
                 </button>
               </div>
 
-              {questions.map((question, qIndex) => (
-                <div key={qIndex} className="border border-gray-200 rounded-lg p-4 mb-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <h5 className="font-medium">Câu hỏi {qIndex + 1}</h5>
-                    <button
-                      type="button"
-                      onClick={() => removeQuestion(qIndex)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      Xóa
-                    </button>
-                  </div>
-                  
-                  <input
-                    type="text"
-                    placeholder="Nhập nội dung câu hỏi"
-                    value={question.content}
-                    onChange={(e) => updateQuestion(qIndex, 'content', e.target.value)}
-                    className="w-full border border-gray-300 rounded px-3 py-2 mb-3"
-                  />
+             {questions.map((question, qIndex) => (
+  <div key={qIndex} className="border border-gray-200 rounded-lg p-4 mb-4">
+    <div className="flex justify-between items-center mb-2">
+      <h5 className="font-medium">Câu hỏi {qIndex + 1}</h5>
+      <button
+        type="button"
+        onClick={() => removeQuestion(qIndex)}
+        className="text-red-500 hover:text-red-700"
+      >
+        Xóa
+      </button>
+    </div>
+    
+    <input
+      type="text"
+      placeholder="Nhập nội dung câu hỏi"
+      value={question.content}
+      onChange={(e) => updateQuestion(qIndex, 'content', e.target.value)}
+      className="w-full border border-gray-300 rounded px-3 py-2 mb-3"
+    />
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {question.answers.map((answer, aIndex) => (
-                      <div key={aIndex} className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={answer.isCorrect}
-                          onChange={(e) => updateAnswer(qIndex, aIndex, 'isCorrect', e.target.checked)}
-                          className="w-4 h-4"
-                        />
-                        <input
-                          type="text"
-                          placeholder={`Đáp án ${aIndex + 1}`}
-                          value={answer.content}
-                          onChange={(e) => updateAnswer(qIndex, aIndex, 'content', e.target.value)}
-                          className="flex-1 border border-gray-300 rounded px-2 py-1"
-                        />
-                        {formData.quizType === 'personality' && (
-                          <input
-                            type="text"
-                            placeholder="Personality"
-                            value={answer.isPersonality}
-                            onChange={(e) => updateAnswer(qIndex, aIndex, 'isPersonality', e.target.value)}
-                            className="w-32 border border-gray-300 rounded px-2 py-1" // ← SỬA TỪ w-20 THÀNH w-32
-                          />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+    {/* ← THÊM: Phần upload ảnh câu hỏi */}
+    <div className="mb-3">
+      <label className="block text-sm font-medium mb-1">Hình ảnh câu hỏi (tùy chọn)</label>
+      <input
+        type="file"
+        accept="image/*"
+        onChange={(e) => handleQuestionImageChange(e, qIndex)}
+        className="w-full border border-gray-300 rounded px-3 py-2"
+      />
+      {question.imagePreview && (
+        <div className="mt-2">
+          <img 
+            src={question.imagePreview} 
+            alt="Preview câu hỏi" 
+            className="max-w-xs max-h-24 object-cover rounded border"
+          />
+          <button
+            type="button"
+            onClick={() => removeQuestionImage(qIndex)}
+            className="ml-2 text-red-500 text-sm hover:text-red-700"
+          >
+            Xóa ảnh
+          </button>
+        </div>
+      )}
+    </div>
+
+    {/* Phần answers giữ nguyên */}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+      {question.answers.map((answer, aIndex) => (
+        <div key={aIndex} className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            checked={answer.isCorrect}
+            onChange={(e) => updateAnswer(qIndex, aIndex, 'isCorrect', e.target.checked)}
+            className="w-4 h-4"
+          />
+          <input
+            type="text"
+            placeholder={`Đáp án ${aIndex + 1}`}
+            value={answer.content}
+            onChange={(e) => updateAnswer(qIndex, aIndex, 'content', e.target.value)}
+            className="flex-1 border border-gray-300 rounded px-2 py-1"
+          />
+          {formData.quizType === 'personality' && (
+            <input
+              type="text"
+              placeholder="Personality"
+              value={answer.isPersonality}
+              onChange={(e) => updateAnswer(qIndex, aIndex, 'isPersonality', e.target.value)}
+              className="w-32 border border-gray-300 rounded px-2 py-1"
+            />
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+))}
+
+
             </div>
 
             {/* Submit buttons */}

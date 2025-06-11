@@ -7,7 +7,8 @@ const EditQuizModal = ({ onClose, onUpdate, quizId }) => {
     description: '',
     categoryId: '',
     timeLimit: 0,
-    quizType: 'iq'
+    quizType: 'iq',
+    imageUrl: null // ← THÊM để lưu ảnh quiz
   });
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -24,9 +25,9 @@ const EditQuizModal = ({ onClose, onUpdate, quizId }) => {
       })
       .catch(console.error);
 
-    // Lấy dữ liệu quiz để edit
+    // ← SỬA: Gọi đúng API endpoint
     if (quizId) {
-      fetch(`http://localhost:5000/api/admin/quizzes/${quizId}/edit`)
+      fetch(`http://localhost:5000/api/admin/quizzes/${quizId}`)
         .then(res => res.json())
         .then(data => {
           if (data.success) {
@@ -34,11 +35,12 @@ const EditQuizModal = ({ onClose, onUpdate, quizId }) => {
             setFormData({
               title: quiz.title,
               description: quiz.description,
-              categoryId: quiz.categoryId,
-              timeLimit: quiz.timeLimit,
-              quizType: quiz.quizType
+              categoryId: quiz.category_id, // ← SỬA: category_id thay vì categoryId
+              timeLimit: quiz.time_limit,   // ← SỬA: time_limit thay vì timeLimit
+              quizType: quiz.quiz_type,     // ← SỹA: quiz_type thay vì quizType
+              imageUrl: quiz.image_url      // ← THÊM: ảnh quiz
             });
-            setQuestions(quiz.questions);
+            setQuestions(quiz.questions || []);
           } else {
             alert('Không thể tải dữ liệu quiz');
           }
@@ -56,6 +58,9 @@ const EditQuizModal = ({ onClose, onUpdate, quizId }) => {
     setQuestions([...questions, {
       content: '',
       type: 'single_choice',
+      imageFile: null,
+      imagePreview: null,
+      imageUrl: null,
       answers: [
         { content: '', isCorrect: false, isPersonality: '' },
         { content: '', isCorrect: false, isPersonality: '' },
@@ -77,74 +82,147 @@ const EditQuizModal = ({ onClose, onUpdate, quizId }) => {
     setQuestions(newQuestions);
   };
 
+  const handleQuestionImageChange = (e, questionIndex) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Kích thước ảnh không được vượt quá 5MB');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        updateQuestion(questionIndex, 'imagePreview', e.target.result);
+        updateQuestion(questionIndex, 'imageFile', file);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeQuestionImage = (questionIndex) => {
+    updateQuestion(questionIndex, 'imagePreview', null);
+    updateQuestion(questionIndex, 'imageFile', null);
+    updateQuestion(questionIndex, 'imageUrl', null);
+  };
+
+  const uploadQuestionImage = async (file) => {
+    if (!file) return null;
+
+    const formData = new FormData();
+    formData.append('questionImage', file);
+
+    try {
+      const response = await fetch('http://localhost:5000/api/admin/questions/upload-image', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        return data.data.filePath;
+      } else {
+        alert(data.message || 'Upload hình ảnh thất bại');
+        return null;
+      }
+    } catch (error) {
+      console.error('Error uploading question image:', error);
+      alert('Lỗi upload hình ảnh câu hỏi');
+      return null;
+    }
+  };
+
   const removeQuestion = (index) => {
     setQuestions(questions.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  console.log('=== SUBMIT EDIT QUIZ ===');
-  console.log('Questions trước khi gửi:', questions);
-  
-  // Làm sạch dữ liệu trước khi gửi
-  const cleanQuestions = questions
-    .filter(q => q.content && q.content.trim() !== '') // Loại bỏ questions rỗng
-    .map((question, index) => ({
-      content: question.content.trim(),
-      type: question.type || 'single_choice',
-      answers: question.answers
-        .filter(a => a.content && a.content.trim() !== '') // Loại bỏ answers rỗng
-        .map(answer => ({
-          content: answer.content.trim(),
-          isCorrect: answer.isCorrect || false,
-          isPersonality: answer.isPersonality || null
-        }))
-    }))
-    .filter(q => q.answers.length >= 2); // Chỉ giữ questions có ít nhất 2 answers
-
-  console.log('Questions sau khi làm sạch:', cleanQuestions);
-
-  if (cleanQuestions.length === 0) {
-    alert('Phải có ít nhất một câu hỏi hợp lệ với ít nhất 2 đáp án');
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    const response = await fetch(`http://localhost:5000/api/admin/quizzes/${quizId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        title: formData.title.trim(),
-        description: formData.description.trim(),
-        categoryId: formData.categoryId,
-        timeLimit: formData.timeLimit,
-        quizType: formData.quizType,
-        questions: cleanQuestions, // Gửi dữ liệu đã làm sạch
-        imageUrl: formData.imageUrl || null
-      }),
-    });
-
-    const data = await response.json();
+    e.preventDefault();
     
-    if (data.success) {
-      onUpdate();
-      alert('Cập nhật quiz thành công!');
-    } else {
-      alert(data.message || 'Cập nhật quiz thất bại');
+    console.log('=== SUBMIT EDIT QUIZ ===');
+    console.log('Questions trước khi gửi:', questions);
+    
+    // Làm sạch dữ liệu trước khi gửi
+    const cleanQuestions = questions
+      .filter(q => q.content && q.content.trim() !== '')
+      .map((question, index) => ({
+        content: question.content.trim(),
+        type: question.type || 'single_choice',
+        imageUrl: question.imageUrl, // Giữ URL cũ
+        imageFile: question.imageFile, // File mới nếu có
+        answers: question.answers
+          .filter(a => a.content && a.content.trim() !== '')
+          .map(answer => ({
+            content: answer.content.trim(),
+            isCorrect: answer.isCorrect || false,
+            isPersonality: answer.isPersonality || null
+          }))
+      }))
+      .filter(q => q.answers.length >= 2);
+
+    console.log('Questions sau khi làm sạch:', cleanQuestions);
+
+    if (cleanQuestions.length === 0) {
+      alert('Phải có ít nhất một câu hỏi hợp lệ với ít nhất 2 đáp án');
+      return;
     }
-  } catch (error) {
-    console.error('Error:', error);
-    alert('Lỗi khi kết nối đến server');
+
+    setLoading(true);
+
+    try {
+      // ← SỬA: Upload ảnh cho từng câu hỏi trước
+      const questionsWithImages = [];
+      
+      for (let i = 0; i < cleanQuestions.length; i++) { // ← SỬA dòng này
+  const question = cleanQuestions[i]; // ← SỬA dòng này
+  let questionImageUrl = question.imageUrl;
+  
+  if (question.imageFile) {
+    const newImageUrl = await uploadQuestionImage(question.imageFile);
+    if (newImageUrl) {
+      questionImageUrl = newImageUrl;
+    }
   }
+        
+       questionsWithImages.push({
+    content: question.content.trim(),
+    type: question.type || 'single_choice',
+    imageUrl: questionImageUrl,
+    answers: question.answers
+  });
+}
 
-  setLoading(false);
-};
+      const response = await fetch(`http://localhost:5000/api/admin/quizzes/${quizId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: formData.title.trim(),
+          description: formData.description.trim(),
+          categoryId: formData.categoryId,
+          timeLimit: formData.timeLimit,
+          quizType: formData.quizType,
+          questions: questionsWithImages,
+          imageUrl: formData.imageUrl || null
+        }),
+      });
 
+      const data = await response.json();
+      
+      if (data.success) {
+        onUpdate();
+        alert('Cập nhật quiz thành công!');
+      } else {
+        alert(data.message || 'Cập nhật quiz thất bại');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Lỗi khi kết nối đến server');
+    }
+
+    setLoading(false);
+  };
 
   if (loadingData) {
     return (
@@ -268,6 +346,34 @@ const EditQuizModal = ({ onClose, onUpdate, quizId }) => {
                     className="w-full border border-gray-300 rounded px-3 py-2 mb-3"
                   />
 
+                  {/* Phần upload ảnh câu hỏi */}
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium mb-1">Hình ảnh câu hỏi (tùy chọn)</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleQuestionImageChange(e, qIndex)}
+                      className="w-full border border-gray-300 rounded px-3 py-2"
+                    />
+                    {(question.imagePreview || question.imageUrl) && (
+                      <div className="mt-2">
+                        <img 
+                          src={question.imagePreview || question.imageUrl} 
+                          alt="Preview câu hỏi" 
+                          className="max-w-xs max-h-24 object-cover rounded border"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeQuestionImage(qIndex)}
+                          className="ml-2 text-red-500 text-sm hover:text-red-700"
+                        >
+                          Xóa ảnh
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Phần answers */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {question.answers.map((answer, aIndex) => (
                       <div key={aIndex} className="flex items-center space-x-2">
@@ -290,7 +396,7 @@ const EditQuizModal = ({ onClose, onUpdate, quizId }) => {
                             placeholder="Personality"
                             value={answer.isPersonality}
                             onChange={(e) => updateAnswer(qIndex, aIndex, 'isPersonality', e.target.value)}
-                            className="w-20 border border-gray-300 rounded px-2 py-1"
+                            className="w-32 border border-gray-300 rounded px-2 py-1"
                           />
                         )}
                       </div>
