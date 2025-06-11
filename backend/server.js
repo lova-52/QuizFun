@@ -39,7 +39,10 @@ const supabase = createClient(
 
 const app = express();
 app.use(cors());
-app.use(bodyParser.json());
+// Sửa bodyParser để tăng giới hạn
+app.use(bodyParser.json({ limit: '50mb' })); // ← SỬA: Tăng từ default lên 50MB
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true })); // ← THÊM
+
 
 const PORT = 5000;
 
@@ -297,25 +300,31 @@ app.get('/api/quizzes/:id/questions', async (req, res) => {
     }, {});
     // Format dữ liệu câu hỏi với URL ảnh
     const formattedQuestions = await Promise.all(questions.map(async (question, index) => {
-      let questionImageUrl = null;
-      
-      // Nếu có question_image, tạo public URL
-      if (question.question_image) {
-        const { data } = supabase.storage
-          .from('project-bucket')
-          .getPublicUrl(question.question_image);
-        questionImageUrl = data.publicUrl;
-      }
+  let questionImageUrl = null;
+  
+  // ← SỬA: Xử lý đúng question_image
+  if (question.question_image) {
+    if (question.question_image.startsWith('http')) {
+      // Đã là full URL
+      questionImageUrl = question.question_image;
+    } else {
+      // Là file path, tạo public URL
+      const { data } = supabase.storage
+        .from('project-bucket')
+        .getPublicUrl(question.question_image);
+      questionImageUrl = data.publicUrl;
+    }
+  }
 
-      return {
-        id: question.id,
-        question: question.content,
-        questionImage: questionImageUrl, // Thêm URL ảnh câu hỏi
-        type: question.type, // 'single_choice' hoặc 'multi_choice'
-        order: question.order,
-        answers: answersGrouped[question.id] || []
-      };
-    }));
+  return {
+    id: question.id,
+    question: question.content,
+    questionImage: questionImageUrl, // ← SỬA: Đảm bảo có URL đúng
+    type: question.type,
+    order: question.order,
+    answers: answersGrouped[question.id] || []
+  };
+}));
 
     const quizInfo = {
       id: quiz.id,
@@ -855,6 +864,60 @@ app.post('/api/admin/quizzes/upload-image', upload.single('quizImage'), async (r
 });
 
 
+// API upload hình ảnh câu hỏi (thêm sau API upload quiz image)
+app.post('/api/admin/questions/upload-image', upload.single('questionImage'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Không có file được upload'
+      });
+    }
+
+    const file = req.file;
+    const fileName = `question-${Date.now()}-${file.originalname}`;
+    const filePath = `question-images/${fileName}`;
+
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from('project-bucket')
+      .upload(filePath, file.buffer, {
+        contentType: file.mimetype,
+        upsert: false
+      });
+
+    if (error) {
+      console.error('Lỗi upload Supabase:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Lỗi upload hình ảnh câu hỏi'
+      });
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from('project-bucket')
+      .getPublicUrl(filePath);
+
+    return res.json({
+      success: true,
+      data: {
+        fileName: fileName,
+        filePath: filePath,
+        imageUrl: urlData.publicUrl
+      }
+    });
+
+  } catch (error) {
+    console.error('Lỗi upload question image:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Lỗi server'
+    });
+  }
+});
+
+
 // API tạo quiz mới
 app.post('/api/admin/quizzes', async (req, res) => {
   try {
@@ -894,15 +957,17 @@ app.post('/api/admin/quizzes', async (req, res) => {
       const question = questions[i];
       
       const { data: newQuestion, error: questionError } = await supabase
-        .from('questions')
-        .insert([{
-          quiz_id: newQuiz.id,
-          content: question.content,
-          type: question.type || 'single_choice',
-          order: i + 1
-        }])
-        .select()
-        .single();
+  .from('questions')
+  .insert([{
+    quiz_id: newQuiz.id,
+    content: question.content,
+    type: question.type || 'single_choice',
+    order: i + 1,
+      question_image: question.imageUrl || null  // ← THÊM dòng này
+  }])
+  .select()
+  .single();
+
 
       if (questionError) {
         console.error('Lỗi khi tạo question:', questionError);
@@ -953,87 +1018,93 @@ app.post('/api/admin/quizzes', async (req, res) => {
 });
 
 
-// API lấy chi tiết quiz để edit (bao gồm questions và answers)
-app.get('/api/admin/quizzes/:id/edit', async (req, res) => {
+// API lấy quiz để edit - THÊM question_image
+ // API lấy quiz để edit - SỬA CÁCH TẠO PUBLIC URL
+app.get('/api/admin/quizzes/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Lấy thông tin quiz
     const { data: quiz, error: quizError } = await supabase
       .from('quizzes')
-      .select(`
-        *,
-        categories (id, name)
-      `)
+      .select('*')
       .eq('id', id)
       .single();
 
     if (quizError || !quiz) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Không tìm thấy quiz' 
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy quiz'
       });
     }
 
-    // Lấy questions với answers
     const { data: questions, error: questionsError } = await supabase
       .from('questions')
-      .select(`
-        *,
-        answers (*)
-      `)
+      .select('id, content, type, order, question_image, answers (id, content, is_correct, is_personality)')
       .eq('quiz_id', id)
       .order('order', { ascending: true });
 
     if (questionsError) {
-      console.error('Lỗi khi lấy questions:', questionsError);
-      return res.status(500).json({ 
-        success: false, 
-        message: 'Lỗi server khi lấy câu hỏi' 
+      return res.status(500).json({
+        success: false,
+        message: 'Lỗi khi lấy câu hỏi'
       });
     }
 
-    // Format data cho frontend
-    const formattedQuestions = questions.map(question => ({
-      id: question.id,
-      content: question.content,
-      type: question.type,
-      order: question.order,
-      answers: question.answers.map(answer => ({
-        id: answer.id,
-        content: answer.content,
-        isCorrect: answer.is_correct,
-        isPersonality: answer.is_personality || ''
-      }))
-    }));
+    // ← SỬA: Xử lý đúng cách tạo public URL
+    const formattedQuestions = questions.map((question) => {
+      let questionImageUrl = null;
+      
+      if (question.question_image) {
+        // ← SỬA: Kiểm tra xem đã là full URL chưa
+        if (question.question_image.startsWith('http')) {
+          // Đã là full URL
+          questionImageUrl = question.question_image;
+        } else {
+          // Là file path, cần tạo public URL
+          const { data } = supabase.storage
+            .from('project-bucket')
+            .getPublicUrl(question.question_image);
+          questionImageUrl = data.publicUrl;
+        }
+      }
 
-    const quizData = {
-      id: quiz.id,
-      title: quiz.title,
-      description: quiz.description,
-      categoryId: quiz.category_id,
-      categoryName: quiz.categories?.name || 'Unknown',
-      timeLimit: quiz.time_limit || 0,
-      quizType: quiz.quiz_type || 'iq',
-      totalQuestions: quiz.total_questions || 0,
-      questions: formattedQuestions
-    };
+      return {
+        id: question.id,
+        content: question.content,
+        type: question.type,
+        order: question.order,
+        imageUrl: questionImageUrl,
+        imagePreview: questionImageUrl,
+        imageFile: null,
+        answers: question.answers.map(answer => ({
+          id: answer.id,
+          content: answer.content,
+          isCorrect: answer.is_correct,
+          isPersonality: answer.is_personality
+        }))
+      };
+    });
 
     return res.json({
       success: true,
-      data: quizData
+      data: {
+        ...quiz,
+        questions: formattedQuestions
+      }
     });
 
   } catch (error) {
-    console.error('Lỗi không mong muốn:', error);
-    return res.status(500).json({ 
-      success: false, 
-      message: 'Lỗi server' 
+    console.error('Lỗi lấy quiz:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Lỗi server'
     });
   }
 });
 
-// API cập nhật quiz - SỬA LỖI FOREIGN KEY CONSTRAINT
+
+
+// API cập nhật quiz - ĐÃ THÊM SUPPORT CHO QUESTION IMAGE
 app.put('/api/admin/quizzes/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -1153,15 +1224,17 @@ app.put('/api/admin/quizzes/:id', async (req, res) => {
       const questionData = questions[questionIndex];
       
       console.log(`📝 Tạo question ${questionIndex + 1}: "${questionData.content}"`);
+      console.log(`🖼️ Image URL cho question ${questionIndex + 1}:`, questionData.imageUrl);
 
-      // Tạo question
+      // Tạo question với image
       const { data: newQuestion, error: questionError } = await supabase
         .from('questions')
         .insert([{
           quiz_id: parseInt(id),
           content: questionData.content.trim(),
           type: questionData.type || 'single_choice',
-          order: questionIndex + 1
+          order: questionIndex + 1,
+          question_image: questionData.imageUrl || null  // ← ĐÃ CÓ: Lưu image path
         }])
         .select('id')
         .single();
@@ -1223,6 +1296,7 @@ app.put('/api/admin/quizzes/:id', async (req, res) => {
     });
   }
 });
+
 
 
 
