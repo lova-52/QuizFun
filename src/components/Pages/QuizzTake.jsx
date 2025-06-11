@@ -153,14 +153,31 @@ function QuizzTake() {
 
   const handleSubmit = async () => {
     try {
+      // ← SỬA: Thêm chi tiết câu hỏi và đáp án để gửi lên server
       const submitData = {
-        answers: Object.keys(answers).map(questionId => ({
-          questionId: parseInt(questionId),
-          selectedAnswers: answers[questionId] || []
-        })),
+        answers: Object.keys(answers).map(questionId => {
+          const question = questions.find(q => q.id === parseInt(questionId));
+          const selectedAnswerIds = answers[questionId] || [];
+          
+          return {
+            questionId: parseInt(questionId),
+            selectedAnswers: selectedAnswerIds,
+            // ← THÊM: Chi tiết câu hỏi để hiển thị trong kết quả
+            questionContent: question?.question || '',
+            questionOptions: question?.answers || [],
+            selectedAnswerTexts: selectedAnswerIds.map(answerId => 
+              question?.answers?.find(opt => opt.id === answerId)?.content || ''
+            )
+          };
+        }),
         timeSpent: (quiz.timeLimit * 60) - timeLeft,
-        userId: user ? user.id : null
+        userId: user ? user.id : null,
+        // ← THÊM: Thông tin quiz để xử lý kết quả
+        quizType: quiz.quiz_type || quiz.type,
+        totalQuestions: questions.length
       };
+
+      console.log('Submit data:', submitData); // Debug
 
       const response = await fetch(`http://localhost:5000/api/quizzes/${quizId}/submit`, {
         method: 'POST',
@@ -172,18 +189,38 @@ function QuizzTake() {
       });
 
       const result = await response.json();
-      //In ra response để kiểm tra
       console.log('Submit response:', result);
 
       if (result.success) {
         navigate(`/quiz/${quizId}/result`, {
           state: {
             ...result.data,
-            quizTitle: quiz.title
+            quizTitle: quiz.title,
+            // ← THÊM: Chi tiết câu hỏi để hiển thị trong QuizResult
+            detailedResults: result.data.detailedResults || [],
+            quizType: quiz.quiz_type || quiz.type
           }
         });
       } else {
         console.error('Submit failed:', result.message);
+        
+        // ← SỬA: Fallback với chi tiết câu hỏi
+        const fallbackDetailedResults = Object.keys(answers).map(questionId => {
+          const question = questions.find(q => q.id === parseInt(questionId));
+          const selectedAnswerIds = answers[questionId] || [];
+          const selectedAnswer = question?.answers?.find(opt => selectedAnswerIds.includes(opt.id));
+          const correctAnswer = question?.answers?.find(opt => opt.is_correct);
+          
+          return {
+            questionId: parseInt(questionId),
+            questionContent: question?.question || '',
+            selectedAnswer: selectedAnswer?.content || 'Không chọn',
+            correctAnswer: correctAnswer?.content || 'N/A',
+            isCorrect: selectedAnswer?.is_correct || false,
+            options: question?.answers || []
+          };
+        });
+
         const totalAnswered = Object.keys(answers).length;
         const completionRate = (totalAnswered / questions.length) * 100;
 
@@ -194,12 +231,32 @@ function QuizzTake() {
             completionRate,
             timeSpent: (quiz.timeLimit * 60) - timeLeft,
             quizTitle: quiz.title,
-            quizType: quiz.type
+            quizType: quiz.quiz_type || quiz.type,
+            score: 0, // Default fallback
+            detailedResults: fallbackDetailedResults // ← THÊM chi tiết fallback
           }
         });
       }
     } catch (error) {
       console.error('Error submitting quiz:', error);
+      
+      // ← SỬA: Fallback với chi tiết câu hỏi khi có lỗi
+      const fallbackDetailedResults = Object.keys(answers).map(questionId => {
+        const question = questions.find(q => q.id === parseInt(questionId));
+        const selectedAnswerIds = answers[questionId] || [];
+        const selectedAnswer = question?.answers?.find(opt => selectedAnswerIds.includes(opt.id));
+        const correctAnswer = question?.answers?.find(opt => opt.is_correct);
+        
+        return {
+          questionId: parseInt(questionId),
+          questionContent: question?.question || '',
+          selectedAnswer: selectedAnswer?.content || 'Không chọn',
+          correctAnswer: correctAnswer?.content || 'N/A',
+          isCorrect: selectedAnswer?.is_correct || false,
+          options: question?.answers || []
+        };
+      });
+
       const totalAnswered = Object.keys(answers).length;
       const completionRate = (totalAnswered / questions.length) * 100;
 
@@ -210,7 +267,9 @@ function QuizzTake() {
           completionRate,
           timeSpent: (quiz.timeLimit * 60) - timeLeft,
           quizTitle: quiz.title,
-          quizType: quiz.type
+          quizType: quiz.quiz_type || quiz.type,
+          score: 0, // Default fallback
+          detailedResults: fallbackDetailedResults // ← THÊM chi tiết fallback
         }
       });
     }
