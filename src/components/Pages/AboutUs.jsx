@@ -4,25 +4,25 @@ const AboutUs = () => {
   const teamMembers = [
     {
       id: 1,
-      name: "Nguyễn Văn A",
+      name: "Trần Lê Đại Nghĩa",
       role: "Founder & CEO",
-      description: "Với hơn 5 năm kinh nghiệm trong lĩnh vực giáo dục và công nghệ, A đã khởi xướng ý tưởng tạo ra QuizFun để mang đến trải nghiệm học tập thú vị.",
+      description: "Với hơn 5 năm kinh nghiệm trong lĩnh vực giáo dục và công nghệ, Nghĩa đã khởi xướng ý tưởng tạo ra QuizFun để mang đến trải nghiệm học tập thú vị.",
       avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=face",
       skills: ["Leadership", "Product Strategy", "Education Tech"]
     },
     {
       id: 2,
-      name: "Trần Thị B",
+      name: "Trần Ngọc Long",
       role: "Lead Developer",
-      description: "Chuyên gia phát triển full-stack với đam mê tạo ra những sản phẩm công nghệ chất lượng cao. B chịu trách nhiệm về toàn bộ hạ tầng kỹ thuật của QuizFun.",
-      avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=300&h=300&fit=crop&crop=face",
-      skills: ["React", "Node.js", "Database Design"]
+      description: "Chuyên gia phát triển full-stack với đam mê tạo ra những sản phẩm công nghệ chất lượng cao. Long chịu trách nhiệm về toàn bộ hạ tầng kỹ thuật của QuizFun.",
+      avatar: "https://images.steamusercontent.com/ugc/2011467728958287564/1E34F24C6216C28C64812D96A64FD6A56529D21B/?imw=637&imh=358&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=true",
+      skills: ["React", "Node.js", "CMS Development"]
     },
     {
       id: 3,
-      name: "Phạm Văn C",
+      name: "Nguyễn Văn Nam",
       role: "UI/UX Designer",
-      description: "Nghệ sĩ thiết kế với tài năng biến những ý tưởng phức tạp thành giao diện đơn giản, thân thiện. C đảm bảo QuizFun luôn mang đến trải nghiệm người dùng tuyệt vời.",
+      description: "Nghệ sĩ thiết kế với tài năng biến những ý tưởng phức tạp thành giao diện đơn giản, thân thiện. Nam đảm bảo QuizFun luôn mang đến trải nghiệm người dùng tuyệt vời.",
       avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop&crop=face",
       skills: ["UI Design", "UX Research", "Prototyping"]
     }
@@ -145,7 +145,7 @@ const AboutUs = () => {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-800 mb-1">Email</h3>
-                    <p className="text-blue-600 font-medium">contact@quizfun.com</p>
+                    <p className="text-blue-600 font-medium">quizzfun93@gmail.com</p>
                   </div>
                 </div>
               </div>
