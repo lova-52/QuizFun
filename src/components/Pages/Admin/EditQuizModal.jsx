@@ -82,56 +82,69 @@ const EditQuizModal = ({ onClose, onUpdate, quizId }) => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
+  
+  console.log('=== SUBMIT EDIT QUIZ ===');
+  console.log('Questions trước khi gửi:', questions);
+  
+  // Làm sạch dữ liệu trước khi gửi
+  const cleanQuestions = questions
+    .filter(q => q.content && q.content.trim() !== '') // Loại bỏ questions rỗng
+    .map((question, index) => ({
+      content: question.content.trim(),
+      type: question.type || 'single_choice',
+      answers: question.answers
+        .filter(a => a.content && a.content.trim() !== '') // Loại bỏ answers rỗng
+        .map(answer => ({
+          content: answer.content.trim(),
+          isCorrect: answer.isCorrect || false,
+          isPersonality: answer.isPersonality || null
+        }))
+    }))
+    .filter(q => q.answers.length >= 2); // Chỉ giữ questions có ít nhất 2 answers
+
+  console.log('Questions sau khi làm sạch:', cleanQuestions);
+
+  if (cleanQuestions.length === 0) {
+    alert('Phải có ít nhất một câu hỏi hợp lệ với ít nhất 2 đáp án');
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const response = await fetch(`http://localhost:5000/api/admin/quizzes/${quizId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        categoryId: formData.categoryId,
+        timeLimit: formData.timeLimit,
+        quizType: formData.quizType,
+        questions: cleanQuestions, // Gửi dữ liệu đã làm sạch
+        imageUrl: formData.imageUrl || null
+      }),
+    });
+
+    const data = await response.json();
     
-    if (!formData.title || !formData.description || !formData.categoryId || questions.length === 0) {
-      alert('Vui lòng nhập đầy đủ thông tin');
-      return;
+    if (data.success) {
+      onUpdate();
+      alert('Cập nhật quiz thành công!');
+    } else {
+      alert(data.message || 'Cập nhật quiz thất bại');
     }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Lỗi khi kết nối đến server');
+  }
 
-    // Validate questions
-    for (let i = 0; i < questions.length; i++) {
-      const question = questions[i];
-      if (!question.content) {
-        alert(`Câu hỏi ${i + 1} không được để trống`);
-        return;
-      }
-      
-      const hasCorrectAnswer = question.answers.some(answer => answer.isCorrect);
-      if (formData.quizType === 'iq' && !hasCorrectAnswer) {
-        alert(`Câu hỏi ${i + 1} phải có ít nhất một đáp án đúng`);
-        return;
-      }
-    }
+  setLoading(false);
+};
 
-    setLoading(true);
-
-    try {
-      const response = await fetch(`http://localhost:5000/api/admin/quizzes/${quizId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          questions
-        }),
-      });
-
-      const data = await response.json();
-      
-      if (data.success) {
-        onUpdate();
-        alert('Cập nhật quiz thành công!');
-      } else {
-        alert(data.message || 'Cập nhật quiz thất bại');
-      }
-    } catch (error) {
-      alert('Lỗi khi kết nối đến server');
-    }
-
-    setLoading(false);
-  };
 
   if (loadingData) {
     return (

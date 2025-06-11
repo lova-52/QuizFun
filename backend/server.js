@@ -1033,11 +1033,15 @@ app.get('/api/admin/quizzes/:id/edit', async (req, res) => {
   }
 });
 
-// API cập nhật quiz
+// API cập nhật quiz - SỬA LỖI FOREIGN KEY CONSTRAINT
 app.put('/api/admin/quizzes/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, categoryId, timeLimit, quizType, questions } = req.body;
+    const { title, description, categoryId, timeLimit, quizType, questions, imageUrl } = req.body;
+
+    console.log('=== BẮT ĐẦU CẬP NHẬT QUIZ ===');
+    console.log('Quiz ID:', id);
+    console.log('Số questions mới:', questions.length);
 
     if (!title || !description || !categoryId || !questions || questions.length === 0) {
       return res.status(400).json({ 
@@ -1046,8 +1050,8 @@ app.put('/api/admin/quizzes/:id', async (req, res) => {
       });
     }
 
-    // Cập nhật thông tin quiz
-    const { error: quizError } = await supabase
+    // BƯỚC 1: Cập nhật thông tin quiz
+    const { error: quizUpdateError } = await supabase
       .from('quizzes')
       .update({
         title,
@@ -1056,73 +1060,155 @@ app.put('/api/admin/quizzes/:id', async (req, res) => {
         time_limit: timeLimit || 0,
         quiz_type: quizType || 'iq',
         total_questions: questions.length,
+        image_url: imageUrl || null,
         updated_at: new Date().toISOString()
       })
       .eq('id', id);
 
-    if (quizError) {
-      console.error('Lỗi khi cập nhật quiz:', quizError);
+    if (quizUpdateError) {
+      console.error('Lỗi cập nhật quiz:', quizUpdateError);
       return res.status(500).json({ success: false, message: 'Cập nhật quiz thất bại' });
     }
 
-    // Xóa tất cả questions và answers cũ
-    const { data: oldQuestions } = await supabase
+    console.log('✅ Cập nhật thông tin quiz thành công');
+
+    // BƯỚC 2: XÓA DỮ LIỆU CŨ THEO THỨ TỰ ĐÚNG
+    console.log('🗑️ Bắt đầu xóa dữ liệu cũ theo thứ tự...');
+
+    // 2.1: Lấy question IDs của quiz này
+    const { data: oldQuestions, error: getQuestionsError } = await supabase
       .from('questions')
       .select('id')
       .eq('quiz_id', id);
 
+    if (getQuestionsError) {
+      console.error('Lỗi lấy questions:', getQuestionsError);
+      return res.status(500).json({ success: false, message: 'Lỗi lấy questions cũ' });
+    }
+
     if (oldQuestions && oldQuestions.length > 0) {
       const questionIds = oldQuestions.map(q => q.id);
-      
-      // Xóa answers cũ
-      await supabase
+      console.log('Question IDs cần xóa:', questionIds);
+
+      // 2.2: Lấy answer IDs của các questions này
+      const { data: oldAnswers, error: getAnswersError } = await supabase
         .from('answers')
-        .delete()
+        .select('id')
         .in('question_id', questionIds);
 
-      // Xóa questions cũ
-      await supabase
+      if (getAnswersError) {
+        console.error('Lỗi lấy answers:', getAnswersError);
+        return res.status(500).json({ success: false, message: 'Lỗi lấy answers cũ' });
+      }
+
+      if (oldAnswers && oldAnswers.length > 0) {
+        const answerIds = oldAnswers.map(a => a.id);
+        console.log('Answer IDs cần xóa:', answerIds);
+
+        // 2.3: XÓA USER_ANSWERS TRƯỚC (bảng con)
+        const { error: deleteUserAnswersError } = await supabase
+          .from('user_answers')
+          .delete()
+          .in('answer_id', answerIds);
+
+        if (deleteUserAnswersError) {
+          console.error('Lỗi xóa user_answers:', deleteUserAnswersError);
+          return res.status(500).json({ success: false, message: 'Lỗi xóa user_answers' });
+        }
+
+        console.log('✅ Xóa user_answers thành công');
+
+        // 2.4: XÓA ANSWERS (bảng cha của user_answers)
+        const { error: deleteAnswersError } = await supabase
+          .from('answers')
+          .delete()
+          .in('question_id', questionIds);
+
+        if (deleteAnswersError) {
+          console.error('Lỗi xóa answers:', deleteAnswersError);
+          return res.status(500).json({ success: false, message: 'Lỗi xóa answers' });
+        }
+
+        console.log('✅ Xóa answers thành công');
+      }
+
+      // 2.5: XÓA QUESTIONS (bảng cha của answers)
+      const { error: deleteQuestionsError } = await supabase
         .from('questions')
         .delete()
         .eq('quiz_id', id);
+
+      if (deleteQuestionsError) {
+        console.error('Lỗi xóa questions:', deleteQuestionsError);
+        return res.status(500).json({ success: false, message: 'Lỗi xóa questions' });
+      }
+
+      console.log('✅ Xóa questions thành công');
     }
 
-    // Tạo questions và answers mới
-    for (let i = 0; i < questions.length; i++) {
-      const question = questions[i];
+    // BƯỚC 3: TẠO DỮ LIỆU MỚI
+    console.log('🆕 Bắt đầu tạo dữ liệu mới...');
+
+    for (let questionIndex = 0; questionIndex < questions.length; questionIndex++) {
+      const questionData = questions[questionIndex];
       
+      console.log(`📝 Tạo question ${questionIndex + 1}: "${questionData.content}"`);
+
+      // Tạo question
       const { data: newQuestion, error: questionError } = await supabase
         .from('questions')
         .insert([{
-          quiz_id: id,
-          content: question.content,
-          type: question.type || 'single_choice',
-          order: i + 1
+          quiz_id: parseInt(id),
+          content: questionData.content.trim(),
+          type: questionData.type || 'single_choice',
+          order: questionIndex + 1
         }])
-        .select()
+        .select('id')
         .single();
 
       if (questionError) {
-        console.error('Lỗi khi tạo question:', questionError);
-        continue;
+        console.error(`❌ Lỗi tạo question ${questionIndex + 1}:`, questionError);
+        return res.status(500).json({ 
+          success: false, 
+          message: `Lỗi tạo câu hỏi ${questionIndex + 1}: ${questionError.message}` 
+        });
       }
 
-      // Tạo answers cho question
-      const answersToInsert = question.answers.map(answer => ({
-        question_id: newQuestion.id,
-        content: answer.content,
-        is_correct: answer.isCorrect || false,
-        is_personality: answer.isPersonality || null
-      }));
+      const questionId = newQuestion.id;
+      console.log(`✅ Question ${questionIndex + 1} tạo thành công với ID: ${questionId}`);
 
-      const { error: answersError } = await supabase
-        .from('answers')
-        .insert(answersToInsert);
+      // Tạo answers
+      if (questionData.answers && questionData.answers.length > 0) {
+        const validAnswers = questionData.answers.filter(ans => ans.content && ans.content.trim() !== '');
+        
+        console.log(`📋 Tạo ${validAnswers.length} answers cho question ${questionIndex + 1}`);
 
-      if (answersError) {
-        console.error('Lỗi khi tạo answers:', answersError);
+        for (let answerIndex = 0; answerIndex < validAnswers.length; answerIndex++) {
+          const answerData = validAnswers[answerIndex];
+          
+          const { error: answerError } = await supabase
+            .from('answers')
+            .insert([{
+              question_id: questionId,
+              content: answerData.content.trim(),
+              is_correct: answerData.isCorrect || false,
+              is_personality: answerData.isPersonality || null
+            }]);
+
+          if (answerError) {
+            console.error(`❌ Lỗi tạo answer ${answerIndex + 1}:`, answerError);
+            return res.status(500).json({ 
+              success: false, 
+              message: `Lỗi tạo đáp án ${answerIndex + 1}` 
+            });
+          }
+        }
+
+        console.log(`✅ Tạo answers cho question ${questionIndex + 1} thành công`);
       }
     }
+
+    console.log('🎉 HOÀN THÀNH CẬP NHẬT QUIZ');
 
     return res.json({
       success: true,
@@ -1130,10 +1216,15 @@ app.put('/api/admin/quizzes/:id', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Lỗi không mong muốn:', error);
-    return res.status(500).json({ success: false, message: 'Lỗi server' });
+    console.error('💥 LỖI NGHIÊM TRỌNG:', error);
+    return res.status(500).json({ 
+      success: false, 
+      message: `Lỗi server: ${error.message}` 
+    });
   }
 });
+
+
 
 
 // API cập nhật role user
