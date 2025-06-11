@@ -8,7 +8,6 @@ function QuizzTake() {
   const { quizId } = useParams();
   const navigate = useNavigate();
   const { user, token, openLogin } = useContext(AuthContext);
-  const [isAuthChecked, setIsAuthChecked] = useState(false);
 
   const [quiz, setQuiz] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -20,21 +19,6 @@ function QuizzTake() {
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
 
-  // Kiểm tra xác thực khi component mount
-  useEffect(() => {
-    // Kiểm tra localStorage để khôi phục trạng thái ngay lập tức
-    const savedToken = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-
-    if (savedToken && savedUser) {
-      // Nếu đã có user và token trong localStorage, đánh dấu đã kiểm tra
-      setIsAuthChecked(true);
-    } else if (user === null && token === null) {
-      // Nếu không có user/token và đã kiểm tra, yêu cầu đăng nhập
-      openLogin();
-      navigate('/', { state: { from: `/quiz/${quizId}/take` } });
-    }
-  }, [user, token, openLogin, navigate, quizId]);
 
   // Add beforeunload event listener to warn about unsaved data
   useEffect(() => {
@@ -57,7 +41,7 @@ function QuizzTake() {
       try {
         setLoading(true);
 
-        const response = await fetch(`http://localhost:5000/api/quizzes/${quizId}/questions`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/quizzes/${quizId}/questions`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -92,10 +76,11 @@ function QuizzTake() {
       }
     };
 
-    if (quizId && user && token && isAuthChecked) {
+    // Đơn giản hóa - chỉ cần kiểm tra quizId, user, token
+    if (quizId && user && token) {
       fetchQuizData();
     }
-  }, [quizId, user, token, isAuthChecked]);
+  }, [quizId, user, token]);
 
   // Timer countdown
   useEffect(() => {
@@ -158,14 +143,14 @@ function QuizzTake() {
         answers: Object.keys(answers).map(questionId => {
           const question = questions.find(q => q.id === parseInt(questionId));
           const selectedAnswerIds = answers[questionId] || [];
-          
+
           return {
             questionId: parseInt(questionId),
             selectedAnswers: selectedAnswerIds,
             // ← THÊM: Chi tiết câu hỏi để hiển thị trong kết quả
             questionContent: question?.question || '',
             questionOptions: question?.answers || [],
-            selectedAnswerTexts: selectedAnswerIds.map(answerId => 
+            selectedAnswerTexts: selectedAnswerIds.map(answerId =>
               question?.answers?.find(opt => opt.id === answerId)?.content || ''
             )
           };
@@ -203,14 +188,14 @@ function QuizzTake() {
         });
       } else {
         console.error('Submit failed:', result.message);
-        
+
         // ← SỬA: Fallback với chi tiết câu hỏi
         const fallbackDetailedResults = Object.keys(answers).map(questionId => {
           const question = questions.find(q => q.id === parseInt(questionId));
           const selectedAnswerIds = answers[questionId] || [];
           const selectedAnswer = question?.answers?.find(opt => selectedAnswerIds.includes(opt.id));
           const correctAnswer = question?.answers?.find(opt => opt.is_correct);
-          
+
           return {
             questionId: parseInt(questionId),
             questionContent: question?.question || '',
@@ -239,14 +224,14 @@ function QuizzTake() {
       }
     } catch (error) {
       console.error('Error submitting quiz:', error);
-      
+
       // ← SỬA: Fallback với chi tiết câu hỏi khi có lỗi
       const fallbackDetailedResults = Object.keys(answers).map(questionId => {
         const question = questions.find(q => q.id === parseInt(questionId));
         const selectedAnswerIds = answers[questionId] || [];
         const selectedAnswer = question?.answers?.find(opt => selectedAnswerIds.includes(opt.id));
         const correctAnswer = question?.answers?.find(opt => opt.is_correct);
-        
+
         return {
           questionId: parseInt(questionId),
           questionContent: question?.question || '',
@@ -295,33 +280,6 @@ function QuizzTake() {
     return selectedAnswers.includes(answerId);
   };
 
-  // Hiển thị loading trong khi kiểm tra xác thực
-  if (!isAuthChecked) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="container mx-auto px-4 py-16 max-w-4xl flex justify-center items-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary mx-auto"></div>
-            <p className="mt-4 text-gray-600">Đang kiểm tra đăng nhập...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Hiển thị yêu cầu đăng nhập nếu chưa đăng nhập
-  if (!user || !token) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="container mx-auto px-4 py-16 max-w-4xl flex justify-center items-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary mx-auto"></div>
-            <p className="mt-4 text-gray-600">Vui lòng đăng nhập để tiếp tục...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (loading) {
     return (
@@ -441,20 +399,19 @@ function QuizzTake() {
                 Đã trả lời: <span className="font-medium">{getAnsweredCount()}/{questions.length}</span>
               </div>
             </div>
-            
+
             {/* Grid layout cho điều hướng trên mobile */}
             <div className="grid grid-cols-8 sm:grid-cols-10 gap-2">
               {questions.map((question, index) => (
                 <button
                   key={question.id}
                   onClick={() => setCurrentQuestion(index)}
-                  className={`aspect-square rounded-lg font-medium text-xs transition-colors ${
-                    index === currentQuestion
+                  className={`aspect-square rounded-lg font-medium text-xs transition-colors ${index === currentQuestion
                       ? 'bg-primary text-white'
                       : answers[question.id] && answers[question.id].length > 0
                         ? 'bg-green-100 text-green-700 border border-green-200'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
+                    }`}
                 >
                   {index + 1}
                 </button>
@@ -475,13 +432,12 @@ function QuizzTake() {
                   <button
                     key={question.id}
                     onClick={() => setCurrentQuestion(index)}
-                    className={`w-12 h-10 rounded-lg font-medium text-sm transition-colors ${
-                      index === currentQuestion
+                    className={`w-12 h-10 rounded-lg font-medium text-sm transition-colors ${index === currentQuestion
                         ? 'bg-primary text-white'
                         : answers[question.id] && answers[question.id].length > 0
                           ? 'bg-green-100 text-green-700 border border-green-200'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
+                      }`}
                   >
                     {index + 1}
                   </button>
@@ -547,26 +503,22 @@ function QuizzTake() {
                     <button
                       key={answer.id}
                       onClick={() => handleAnswerSelect(currentQ.id, answer.id, isMultiChoice)}
-                      className={`w-full text-left p-3 md:p-4 rounded-lg border-2 transition-all ${
-                        isAnswerSelected(currentQ.id, answer.id)
+                      className={`w-full text-left p-3 md:p-4 rounded-lg border-2 transition-all ${isAnswerSelected(currentQ.id, answer.id)
                           ? 'border-primary bg-primary bg-opacity-5 text-primary'
                           : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-start">
-                        <div className={`w-5 h-5 mr-3 mt-0.5 flex items-center justify-center flex-shrink-0 ${
-                          isMultiChoice
-                            ? `rounded border-2 ${
-                                isAnswerSelected(currentQ.id, answer.id)
-                                  ? 'border-primary bg-primary'
-                                  : 'border-gray-300'
-                              }`
-                            : `rounded-full border-2 ${
-                                isAnswerSelected(currentQ.id, answer.id)
-                                  ? 'border-primary bg-primary'
-                                  : 'border-gray-300'
-                              }`
-                        }`}>
+                        <div className={`w-5 h-5 mr-3 mt-0.5 flex items-center justify-center flex-shrink-0 ${isMultiChoice
+                            ? `rounded border-2 ${isAnswerSelected(currentQ.id, answer.id)
+                              ? 'border-primary bg-primary'
+                              : 'border-gray-300'
+                            }`
+                            : `rounded-full border-2 ${isAnswerSelected(currentQ.id, answer.id)
+                              ? 'border-primary bg-primary'
+                              : 'border-gray-300'
+                            }`
+                          }`}>
                           {isAnswerSelected(currentQ.id, answer.id) && (
                             isMultiChoice ? (
                               <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -590,11 +542,10 @@ function QuizzTake() {
                   <button
                     onClick={handlePrevious}
                     disabled={currentQuestion === 0}
-                    className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors ${
-                      currentQuestion === 0
+                    className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors ${currentQuestion === 0
                         ? 'text-gray-400 cursor-not-allowed'
                         : 'text-gray-600 hover:text-gray-800 hover:bg-white'
-                    }`}
+                      }`}
                   >
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />

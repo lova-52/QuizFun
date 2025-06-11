@@ -208,23 +208,6 @@ Trân trọng!
     navigate('/');
   };
 
-  // Kiểm tra điều kiện có kết quả
-  if (score === undefined && !personalityType) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="text-center max-w-md">
-          <h2 className="text-2xl font-bold text-gray-800">Không tìm thấy kết quả</h2>
-          <p className="text-gray-600 mt-2">Vui lòng làm bài quiz trước khi xem kết quả.</p>
-          <button 
-            onClick={() => navigate(`/quiz/${quizId}`)}
-            className="mt-4 bg-primary hover:bg-darkPrimary text-white px-6 py-2 rounded-lg"
-          >
-            Quay lại
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   if (loading) {
     return (

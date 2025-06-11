@@ -56,21 +56,29 @@ const App = () => {
             </Layout>
           } />
 
-          {/* Trang làm bài - không hiển thị footer */}
+          {/* Trang làm bài - cần đăng nhập */}
           <Route
             path="/quiz/:quizId/take"
             element={
-              <Layout showFooter={false} showNavbar={false}>
-                <QuizzTake />
-              </Layout>
+              <ProtectedRoute redirectTo="/quiz/:quizId">
+                <Layout showFooter={false} showNavbar={false}>
+                  <QuizzTake />
+                </Layout>
+              </ProtectedRoute>
             }
           />
 
-          <Route path="/quiz/:quizId/result" element={
-            <Layout>
-              <QuizResult />
-            </Layout>
-          } />
+          {/* Trang kết quả - cần đăng nhập và có dữ liệu kết quả */}
+          <Route
+            path="/quiz/:quizId/result"
+            element={
+              <ProtectedRoute redirectTo="/quiz/:quizId" requireQuizResult={true}>
+                <Layout>
+                  <QuizResult />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="/admin/users"
@@ -105,17 +113,21 @@ const App = () => {
             }
           />
 
-          {/* ← SỬA CÁC ROUTE NÀY */}
+          {/* Các route profile cũng cần đăng nhập */}
           <Route path="/profile" element={
-            <Layout>
-              <Profile />
-            </Layout>
+            <ProtectedRoute redirectTo="/">
+              <Layout>
+                <Profile />
+              </Layout>
+            </ProtectedRoute>
           } />
 
           <Route path="/my-quizzes" element={
-            <Layout>
-              <MyQuizzes />
-            </Layout>
+            <ProtectedRoute redirectTo="/">
+              <Layout>
+                <MyQuizzes />
+              </Layout>
+            </ProtectedRoute>
           } />
 
         </Routes>
