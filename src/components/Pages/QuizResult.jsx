@@ -10,103 +10,112 @@ function QuizResult() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  console.log("Kiem tra state", location.state);
-  // Kiem tra state: passed : false personalityType : "balanced" quizTitle : "Thử thách nhanh trí" quizType : "iq" score : 0 timeSpent : 3 totalQuestions : 3
-  const { totalQuestions, completionRate, timeSpent, personalityType, score, quizType, quizTitle } = location.state || {};
+  console.log("=== DEBUG QUIZ RESULT ===");
+  console.log("location.state:", location.state);
+  
+  // Destructure dữ liệu từ location.state
+  const { 
+    totalQuestions = 0, 
+    completionRate = 100, 
+    timeSpent = 0, 
+    personalityType = 'balanced', 
+    score = 0, 
+    quizType = 'iq', 
+    quizTitle = 'Quiz',
+    correctAnswers = 0,
+    detailedResults = [],
+    isPersonalityQuiz = false
+  } = location.state || {};
+
+  console.log("=== RENDER DEBUG ===");
+  console.log("quizType:", quizType);
+  console.log("isPersonalityQuiz:", isPersonalityQuiz);
+  console.log("personalityType:", personalityType);
+  console.log("score:", score);
 
   useEffect(() => {
     // Mock data quiz
     const mockQuiz = {
       id: quizId,
       title: quizTitle,
-      questions: [
-        {
-          id: 1,
-          question: 'Khi tham gia một bữa tiệc, bạn thường:',
-          type: 'single',
-          options: [
-            'Chủ động làm quen với nhiều người mới',
-            'Chỉ nói chuyện với một vài người quen',
-            'Tìm góc yên tĩnh để quan sát',
-            'Rời đi sớm vì cảm thấy mệt mỏi'
-          ]
-        },
-        {
-          id: 2,
-          question: 'Bạn thích học hỏi thông qua:',
-          type: 'single',
-          options: [
-            'Đọc sách và tài liệu',
-            'Thực hành trực tiếp',
-            'Thảo luận với người khác',
-            'Xem video và hình ảnh'
-          ]
-        },
-      ]
+      questions: []
     };
 
-    // Tính toán kết quả quiz (IQ hoặc Personality)
+    // Logic chính để tính toán kết quả
     const calculateResult = () => {
-      if (quizType === "iq") {
-        return calculateIQResult();
-      } else if (quizType === "personality") {
+      console.log("calculateResult - quizType:", quizType);
+      console.log("calculateResult - personalityType:", personalityType);
+      
+      if (quizType === "personality" || isPersonalityQuiz) {
         return calculatePersonalityResult();
+      } else if (quizType === "iq") {
+        return calculateIQResult();
       }
+      return null;
     };
 
     const calculateIQResult = () => {
-      if (!score || totalQuestions === undefined) return null;
+      if (score === undefined || totalQuestions === undefined) return null;
 
       return {
         personalityType: {
-          label: "IQ",
-          description: "Bài kiểm tra IQ của bạn.",
+          label: "IQ Quiz",
+          description: `Bạn đã trả lời đúng ${correctAnswers || Math.round((score/100) * totalQuestions)} / ${totalQuestions} câu hỏi.`,
         },
         score: score,
-        breakdown: {},  // IQ không có breakdown chi tiết
+        correctAnswers: correctAnswers || Math.round((score/100) * totalQuestions),
+        wrongAnswers: totalQuestions - (correctAnswers || Math.round((score/100) * totalQuestions)),
+        breakdown: {},
       };
     };
 
     const calculatePersonalityResult = () => {
-      if (!personalityType || score === undefined) return null;
-
+      console.log("Calculating personality result for:", personalityType);
+      
       const personalityTypes = {
         extrovert: {
           label: 'Hướng ngoại',
           description: 'Bạn là người năng động, thích giao tiếp và làm việc với nhiều người.',
-          count: 1
+          key: 'extrovert'
         },
         introvert: {
-          label: 'Hướng nội',
+          label: 'Hướng nội', 
           description: 'Bạn là người thích suy ngẫm, làm việc độc lập và cần thời gian riêng.',
-          count: 1
+          key: 'introvert'
         },
         thinking: {
           label: 'Lý trí',
           description: 'Bạn đưa ra quyết định dựa trên logic và phân tích khách quan.',
-          count: 1
+          key: 'thinking'
         },
         feeling: {
           label: 'Cảm xúc',
           description: 'Bạn quyết định dựa trên cảm xúc và tác động đến con người.',
-          count: 1
+          key: 'feeling'
+        },
+        sensing: {
+          label: 'Cảm nhận',
+          description: 'Bạn tập trung vào thực tế và chi tiết cụ thể.',
+          key: 'sensing'
+        },
+        intuition: {
+          label: 'Trực giác',
+          description: 'Bạn thích khám phá khả năng và ý tưởng mới.',
+          key: 'intuition'
         },
         balanced: {
           label: 'Cân bằng',
           description: 'Bạn có sự cân bằng giữa các đặc điểm tính cách.',
-          count: 1
+          key: 'balanced'
         }
       };
 
       const typeData = personalityTypes[personalityType] || personalityTypes.balanced;
 
       return {
-        personalityType: {
-          ...typeData,
-          key: personalityType
-        },
-        score,
-        breakdown: {} // Bỏ breakdown chi tiết vì không có answers
+        personalityType: typeData,
+        score: null, // Không có score cho personality
+        breakdown: {}
       };
     };
 
@@ -115,7 +124,7 @@ function QuizResult() {
       setResult(calculateResult());
       setLoading(false);
     }, 1000);
-  }, [quizId, personalityType, score, quizType, quizTitle, totalQuestions]);
+  }, [quizId, personalityType, score, quizType, quizTitle, totalQuestions, correctAnswers, isPersonalityQuiz]);
 
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
@@ -134,12 +143,12 @@ Chào bạn,
 
 Tôi vừa hoàn thành bài quiz "${quizTitle}" với kết quả sau:
 
-🎯 Nhóm tính cách: ${result?.personalityType.label}
-📊 Điểm số: ${result?.score}%
+🎯 ${(quizType === 'personality' || isPersonalityQuiz) ? `Nhóm tính cách: ${result?.personalityType?.label}` : `Điểm số: ${result?.score}%`}
+📊 ${quizType === 'iq' ? `Câu đúng: ${result?.correctAnswers}/${totalQuestions}` : `Loại tính cách: ${result?.personalityType?.label}`}
 📋 Tổng câu hỏi: ${totalQuestions}
 ⏱️ Thời gian: ${formatTime(timeSpent)}
 
-📝 Mô tả: ${result?.personalityType.description}
+📝 Mô tả: ${result?.personalityType?.description}
 
 Trân trọng!
     `);
@@ -154,15 +163,19 @@ Trân trọng!
           Kết quả Quiz: ${quizTitle}
         </h1>
         <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h2 style="color: #007bff; text-align: center;">Nhóm tính cách: ${result?.personalityType.label}</h2>
-          <p style="text-align: center; font-size: 18px; margin: 10px 0;">Điểm số: ${result?.score}%</p>
-          <p style="text-align: center; color: #666;">${result?.personalityType.description}</p>
+          <h2 style="color: #007bff; text-align: center;">
+            ${(quizType === 'personality' || isPersonalityQuiz) ? `Nhóm tính cách: ${result?.personalityType?.label}` : `Điểm số: ${result?.score}%`}
+          </h2>
+          <p style="text-align: center; font-size: 18px; margin: 10px 0;">
+            ${quizType === 'iq' ? `Câu đúng: ${result?.correctAnswers}/${totalQuestions}` : `Loại tính cách: ${result?.personalityType?.label}`}
+          </p>
+          <p style="text-align: center; color: #666;">${result?.personalityType?.description}</p>
         </div>
         <div style="margin: 20px 0;">
           <h3>Thống kê bài làm:</h3>
           <ul>
             <li>Tổng số câu hỏi: ${totalQuestions}</li>
-            <li>Tỷ lệ hoàn thành: ${Math.round(completionRate)}%</li>
+            <li>Tỷ lệ hoàn thành: ${Math.round(completionRate || 100)}%</li>
             <li>Thời gian làm bài: ${formatTime(timeSpent)}</li>
           </ul>
         </div>
@@ -195,7 +208,8 @@ Trân trọng!
     navigate('/');
   };
 
-  if (!personalityType || score === undefined) {
+  // Kiểm tra điều kiện có kết quả
+  if (score === undefined && !personalityType) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="text-center max-w-md">
@@ -233,27 +247,59 @@ Trân trọng!
       <div className="bg-white rounded-xl shadow-lg p-6 mb-4">
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-primary bg-opacity-10 rounded-full mb-3">
-            <span className="text-xl font-bold text-primary">{result?.score}%</span>
+            <span className="text-xl font-bold text-primary">
+              {(quizType === 'personality' || isPersonalityQuiz) ? '🎭' : `${result?.score || 0}%`}
+            </span>
           </div>
+          
           <h2 className="text-xl font-bold text-gray-800 mb-2">
-            {quizType === 'personality' ? `Nhóm tính cách: ${result?.personalityType.label}` : `Điểm của bạn: ${result?.score}%`}
+            {(quizType === 'personality' || isPersonalityQuiz) && personalityType && personalityType !== 'balanced'
+              ? `Nhóm tính cách: ${result?.personalityType?.label || personalityType}` 
+              : quizType === 'iq'
+              ? `Điểm của bạn: ${result?.score || 0}%`
+              : `Nhóm tính cách: ${result?.personalityType?.label || 'Không xác định'}`
+            }
           </h2>
+          
           <p className="text-gray-600 leading-relaxed max-w-xl mx-auto text-sm">
-            {quizType === 'personality' ? result?.personalityType.description : "Đây là kết quả của bạn."}
+            {result?.personalityType?.description || 'Không có mô tả'}
           </p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-4 mb-6">
-          {quizType === 'personality' ? (
+          {(quizType === 'personality' || isPersonalityQuiz) ? (
             <div className="bg-blue-50 rounded-lg p-4">
               <h3 className="font-semibold text-blue-800 mb-2 text-sm">Thông tin tính cách</h3>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-blue-700 text-sm">{result?.personalityType.label}</span>
+                  <span className="text-blue-700 text-sm">Loại tính cách:</span>
+                  <span className="font-medium text-blue-800 text-sm">{result?.personalityType?.label || personalityType}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-blue-700 text-sm">Hoàn thành:</span>
+                  <span className="font-medium text-blue-800 text-sm">100%</span>
                 </div>
               </div>
             </div>
-          ) : null}
+          ) : (
+            <div className="bg-blue-50 rounded-lg p-4">
+              <h3 className="font-semibold text-blue-800 mb-2 text-sm">Kết quả chi tiết</h3>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-blue-700 text-sm">Câu đúng:</span>
+                  <span className="font-medium text-blue-800 text-sm">{result?.correctAnswers || 0}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-blue-700 text-sm">Câu sai:</span>
+                  <span className="font-medium text-blue-800 text-sm">{result?.wrongAnswers || 0}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-blue-700 text-sm">Điểm số:</span>
+                  <span className="font-medium text-blue-800 text-sm">{result?.score || 0}%</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="bg-green-50 rounded-lg p-4">
             <h3 className="font-semibold text-green-800 mb-2 text-sm">Thống kê bài làm</h3>
@@ -264,7 +310,9 @@ Trân trọng!
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-green-700 text-sm">Tỷ lệ hoàn thành</span>
-                <span className="font-medium text-green-800 text-sm">{Math.round(completionRate)}%</span>
+                <span className="font-medium text-green-800 text-sm">
+                  {Math.round(completionRate || 100)}%
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-green-700 text-sm">Thời gian làm bài</span>
@@ -274,6 +322,56 @@ Trân trọng!
           </div>
         </div>
       </div>
+
+      {/* Chi tiết từng câu hỏi cho IQ quiz */}
+      {quizType === 'iq' && detailedResults.length > 0 && (
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-4">
+          <h3 className="text-lg font-bold text-gray-800 mb-4">Chi tiết từng câu hỏi</h3>
+          <div className="space-y-4 max-h-96 overflow-y-auto">
+            {detailedResults.map((item, index) => (
+              <div 
+                key={item.questionId} 
+                className={`border rounded-lg p-4 ${
+                  item.isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
+                }`}
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <h4 className="font-medium text-gray-800 flex-1">
+                    Câu {index + 1}: {item.questionContent}
+                  </h4>
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${
+                    item.isCorrect 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {item.isCorrect ? 'Đúng' : 'Sai'}
+                  </span>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center">
+                    <span className="text-sm text-gray-600 w-24">Bạn chọn:</span>
+                    <span className={`text-sm font-medium ${
+                      item.isCorrect ? 'text-green-700' : 'text-red-700'
+                    }`}>
+                      {item.selectedAnswer}
+                    </span>
+                  </div>
+                  
+                  {!item.isCorrect && (
+                    <div className="flex items-center">
+                      <span className="text-sm text-gray-600 w-24">Đáp án đúng:</span>
+                      <span className="text-sm font-medium text-green-700">
+                        {item.correctAnswer}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <button onClick={handleRetake} className="bg-primary hover:bg-darkPrimary text-white font-medium px-4 py-3 rounded-lg text-sm">

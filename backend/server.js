@@ -342,11 +342,12 @@ app.get('/api/quizzes/:id/questions', async (req, res) => {
     });
   }
 });
+
 // API submit kết quả quiz
 app.post('/api/quizzes/:id/submit', async (req, res) => {
   try {
     const { id } = req.params;
-    const { answers, timeSpent, userId } = req.body;
+    const { answers, timeSpent, userId, quizType, totalQuestions } = req.body;
 
     if (!answers || !Array.isArray(answers)) {
       return res.status(400).json({ 
@@ -366,7 +367,7 @@ app.post('/api/quizzes/:id/submit', async (req, res) => {
     // Lấy dữ liệu quiz và câu hỏi
     const { data: quiz, error: quizError } = await supabase
       .from('quizzes')
-      .select('quiz_type')
+      .select('quiz_type, play_count')
       .eq('id', id)
       .single();
 
@@ -377,11 +378,12 @@ app.post('/api/quizzes/:id/submit', async (req, res) => {
       });
     }
 
-    // Lấy tất cả câu hỏi của quiz, sắp xếp theo order
+    // Lấy tất cả câu hỏi của quiz với đáp án
     const { data: questions, error: questionsError } = await supabase
       .from('questions')
-      .select('id, answers (id, is_correct, is_personality)')
-      .eq('quiz_id', id);
+      .select('id, content, answers (id, content, is_correct, is_personality)')
+      .eq('quiz_id', id)
+      .order('order', { ascending: true });
 
     if (questionsError) {
       return res.status(500).json({ 
@@ -391,112 +393,199 @@ app.post('/api/quizzes/:id/submit', async (req, res) => {
     }
 
     let score = 0;
-    const totalQuestions = questions.length;
+    let correctAnswers = 0;
+    const totalQuestionsCount = questions.length;
     let personalityCounts = {};
+    const detailedResults = [];
 
-    // Xử lý tính điểm
-    answers.forEach(userAnswer => {
-      const question = questions.find(q => q.id === userAnswer.questionId);
-      if (!question) return;
-
-      const correctAnswerIds = question.answers
-        .filter(a => a.is_correct)
-        .map(a => a.id);
-
-      const userAnswerIds = Array.isArray(userAnswer.selectedAnswers) 
-        ? userAnswer.selectedAnswers 
-        : [userAnswer.selectedAnswers];
-
-      // Kiểm tra đáp án đúng cho loại quiz IQ
-      if (quiz.quiz_type === 'iq') {
-        const isCorrect = correctAnswerIds.length === userAnswerIds.length &&
-          correctAnswerIds.every(id => userAnswerIds.includes(id));
-
-        if (isCorrect) {
-          score++;
-        }
-      }
-
-      // Kiểm tra loại quiz Personality
-      if (quiz.quiz_type === 'personality') {
-        question.answers.forEach(answer => {
-          if (userAnswer.selectedAnswers.includes(answer.id)) {
-            const personality = answer.is_personality;
-            if (personality) {
-              personalityCounts[personality] = (personalityCounts[personality] || 0) + 1;
-            }
-          }
-        });
-      }
-    });
-
-    // Tính kết quả cho quiz personality
-    let personalityType = 'balanced';
-    let maxCount = 0;
-    for (const [key, value] of Object.entries(personalityCounts)) {
-      if (value > maxCount) {
-        personalityType = key;
-        maxCount = value;
-      }
-    }
-
-    // Tính điểm và trả kết quả
-    score = Math.round((score / totalQuestions) * 100);
-
-    // Lấy play_count hiện tại
-    const { data: quizPlayData, error: playCountError } = await supabase
-      .from('quizzes')
-      .select('play_count')
-      .eq('id', id)
-      .single();
-
-    if (playCountError) {
-      console.error('Lỗi khi lấy play_count:', playCountError);
-      return res.status(500).json({ success: false, message: 'Không thể lấy số lượt chơi hiện tại' });
-    }
-
-    // Cập nhật play_count
-    const { error: updateError } = await supabase
-      .from('quizzes')
-      .update({ play_count: (quizPlayData.play_count || 0) + 1 })
-      .eq('id', id);
-
-    if (updateError) {
-      console.error('Lỗi khi cập nhật play_count:', updateError);
-      return res.status(500).json({ success: false, message: 'Không thể cập nhật số lượt chơi' });
-    }
-
-
-
-    // Ghi lại lịch sử làm quiz vào bảng user_quizzes
-    const { error: userQuizInsertError } = await supabase
+    // Tạo user_quiz session trước
+    const { data: userQuiz, error: userQuizError } = await supabase
       .from('user_quizzes')
       .insert([{
         user_id: userId,
         quiz_id: id,
         quiz_type: quiz.quiz_type,
-        started_at: new Date().toISOString(), // Ghi thời gian bắt đầu (hoặc có thể lấy từ frontend)
-        finished_at: new Date().toISOString(), // Ghi thời gian kết thúc (hoặc lấy từ frontend)
-        result: JSON.stringify({ score, personalityType}) // Kết quả quiz
-      }]);
+        started_at: new Date(Date.now() - (timeSpent * 1000)).toISOString(),
+        finished_at: new Date().toISOString(),
+        result: null // Sẽ cập nhật sau
+      }])
+      .select()
+      .single();
 
-    if (userQuizInsertError) {
-      console.error('Lỗi khi ghi lịch sử làm quiz:', userQuizInsertError);
-      // Không cần trả lỗi response ở đây, vì không ảnh hưởng đến trải nghiệm người dùng
+    if (userQuizError) {
+      console.error('Lỗi tạo user_quiz:', userQuizError);
+      return res.status(500).json({
+        success: false,
+        message: 'Lỗi lưu session quiz'
+      });
     }
 
-    // Trả kết quả
-    return res.json({
-      success: true,
-      data: {
-        score,
-        totalQuestions,
-        timeSpent,
-        personalityType,
-        passed: score >= 60,
-        quizType: quiz.quiz_type
+   // Xử lý tính điểm và tạo chi tiết kết quả
+for (const userAnswer of answers) {
+  const question = questions.find(q => q.id === userAnswer.questionId);
+  if (!question) continue;
+
+  const userAnswerIds = Array.isArray(userAnswer.selectedAnswers) 
+    ? userAnswer.selectedAnswers 
+    : [userAnswer.selectedAnswers];
+
+  // Tìm đáp án được chọn
+  const selectedAnswer = question.answers.find(a => userAnswerIds.includes(a.id));
+
+  // ← SỬA: Xử lý HOÀN TOÀN riêng biệt cho từng loại quiz
+  if (quiz.quiz_type === 'iq') {
+    // CHỈ xử lý IQ quiz ở đây
+    const correctAnswerIds = question.answers
+      .filter(a => a.is_correct)
+      .map(a => a.id);
+
+    const correctAnswer = question.answers.find(a => a.is_correct);
+
+    const isCorrect = correctAnswerIds.length === userAnswerIds.length &&
+      correctAnswerIds.every(id => userAnswerIds.includes(id));
+
+    if (isCorrect) {
+      score++;
+      correctAnswers++;
+    }
+
+    // Tạo chi tiết cho IQ quiz
+    detailedResults.push({
+      questionId: question.id,
+      questionContent: userAnswer.questionContent || question.content,
+      selectedAnswer: selectedAnswer?.content || 'Không chọn',
+      correctAnswer: correctAnswer?.content || 'N/A',
+      isCorrect: isCorrect,
+      options: question.answers || []
+    });
+
+    // Lưu user_answers cho IQ quiz
+    for (const selectedAnswerId of userAnswerIds) {
+      const selectedAnswerInfo = question.answers.find(a => a.id === selectedAnswerId);
+      const isAnswerCorrect = selectedAnswerInfo?.is_correct || false;
+
+      await supabase
+        .from('user_answers')
+        .insert([{
+          user_quiz_id: userQuiz.id,
+          question_id: question.id,
+          answer_id: selectedAnswerId,
+          is_correct: isAnswerCorrect,
+          finished_at: new Date().toISOString()
+        }]);
+    }
+
+  } else if (quiz.quiz_type === 'personality') {
+    // CHỈ xử lý Personality quiz ở đây - KHÔNG tính score
+    question.answers.forEach(answer => {
+      if (userAnswerIds.includes(answer.id)) {
+        const personality = answer.is_personality;
+        if (personality) {
+          personalityCounts[personality] = (personalityCounts[personality] || 0) + 1;
+        }
       }
     });
+
+    // Lưu user_answers cho personality quiz - TẤT CẢ đều "đúng"
+    for (const selectedAnswerId of userAnswerIds) {
+      await supabase
+        .from('user_answers')
+        .insert([{
+          user_quiz_id: userQuiz.id,
+          question_id: question.id,
+          answer_id: selectedAnswerId,
+          is_correct: true, // Personality quiz không có đúng/sai
+          finished_at: new Date().toISOString()
+        }]);
+    }
+  }
+}
+
+// ← SỬA: Tính kết quả cuối cùng HOÀN TOÀN riêng biệt
+if (quiz.quiz_type === 'personality') {
+  // Tìm personality type chiếm ưu thế
+  let personalityType = 'balanced';
+  let maxCount = 0;
+  
+  console.log('personalityCounts:', personalityCounts); // Debug
+  
+  for (const [key, value] of Object.entries(personalityCounts)) {
+    if (value > maxCount) {
+      personalityType = key;
+      maxCount = value;
+    }
+  }
+
+  console.log('Final personalityType:', personalityType); // Debug
+
+  // Cập nhật kết quả personality
+  const finalResult = JSON.stringify({ 
+    personalityType, 
+    personalityCounts 
+  });
+
+  await supabase
+    .from('user_quizzes')
+    .update({ result: finalResult })
+    .eq('id', userQuiz.id);
+
+  // Cập nhật play_count
+  await supabase
+    .from('quizzes')
+    .update({ play_count: (quiz.play_count || 0) + 1 })
+    .eq('id', id);
+
+  // Trả kết quả personality
+  return res.json({
+    success: true,
+    data: {
+      totalQuestions: totalQuestionsCount,
+      timeSpent,
+      personalityType, // ← QUAN TRỌNG
+      quizType: quiz.quiz_type,
+      completionRate: 100,
+      detailedResults: [],
+      isPersonalityQuiz: true
+    }
+  });
+
+} else {
+  // IQ Quiz
+  const finalScore = Math.round((score / totalQuestionsCount) * 100);
+  
+  const finalResult = JSON.stringify({ 
+    score: finalScore, 
+    passed: finalScore >= 60 
+  });
+
+  await supabase
+    .from('user_quizzes')
+    .update({ result: finalResult })
+    .eq('id', userQuiz.id);
+
+  // Cập nhật play_count
+  await supabase
+    .from('quizzes')
+    .update({ play_count: (quiz.play_count || 0) + 1 })
+    .eq('id', id);
+
+  return res.json({
+    success: true,
+    data: {
+      score: finalScore,
+      totalQuestions: totalQuestionsCount,
+      correctAnswers: correctAnswers,
+      timeSpent,
+      personalityType: 'balanced',
+      passed: finalScore >= 60,
+      quizType: quiz.quiz_type,
+      completionRate: 100,
+      detailedResults: detailedResults,
+      isPersonalityQuiz: false
+    }
+  });
+}
+
 
   } catch (error) {
     console.error('Lỗi submit quiz:', error);
@@ -506,6 +595,8 @@ app.post('/api/quizzes/:id/submit', async (req, res) => {
     });
   }
 });
+
+
 
 
 // Đăng ký
