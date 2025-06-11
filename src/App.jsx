@@ -7,9 +7,9 @@ import CategoriesPage from './components/Pages/CategoryList/CategoriesPage';
 import QuizzDetail from './components/Pages/QuizzDetail';
 import QuizzTake from './components/Pages/QuizzTake';
 import AboutUs from './components/Pages/AboutUs';
-import QuizResult from './components/Pages/QuizResult';
 import UserList from './components/Pages/Admin/UserList';
 import Layout from './components/Layout/layout';
+import QuizResult from './components/Pages/QuizResult';
 
 import AdminDashboard from './components/Pages/Admin/AdminDashboard';
 import QuizManagement from './components/Pages/Admin/QuizManagement';

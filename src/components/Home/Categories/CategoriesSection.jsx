@@ -64,7 +64,7 @@ function CategoriesSection() {
   }
 
   return (
-    <section className="mb-16">
+    <section id="categories-section" className="mb-16">
       <div className="container mx-auto px-4 max-w-7xl">
         {/* Header với responsive "Xem tất cả" */}
         <div className="flex justify-between items-end mb-6 md:mb-10">

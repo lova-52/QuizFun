@@ -1,8 +1,19 @@
 import React from 'react'
 
 const Hero = () => {
+  const scrollToCategoriesSection = () => {
+    const categoriesSection = document.getElementById('categories-section');
+    if (categoriesSection) {
+      categoriesSection.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start',
+        inline: 'nearest'
+      });
+    }
+  };
+
   return (
-<section className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-b-3xl mb-12 py-16 md:py-24">
+    <section className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-b-3xl mb-12 py-16 md:py-24">
       <div className="container mx-auto px-4 max-w-7xl">
         <div className="grid md:grid-cols-2 gap-8 items-center">
           <div className="text-left">
@@ -11,13 +22,16 @@ const Hero = () => {
             </h1>
             <p className="text-lg text-gray-600 mb-8">Tham gia các bài trắc nghiệm hấp dẫn để biết thêm về tính cách, sở thích, tiềm năng và kiểm tra kiến thức của bạn.</p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <a href="#" className="bg-secondary hover:bg-darkSecondary text-white text-lg px-8 py-3 rounded-full font-semibold transition-colors flex items-center justify-center shadow-lg hover:shadow-xl transform hover:-translate-y-1 duration-300">
+              <button 
+                onClick={scrollToCategoriesSection}
+                className="bg-secondary hover:bg-darkSecondary text-white text-lg px-8 py-3 rounded-full font-semibold transition-colors flex items-center justify-center shadow-lg hover:shadow-xl transform hover:-translate-y-1 duration-300"
+              >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 Bắt đầu ngay
-              </a>
+              </button>
             </div>
             <div className="mt-8 flex items-center">
               <div className="flex -space-x-2">

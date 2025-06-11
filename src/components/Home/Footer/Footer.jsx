@@ -23,7 +23,7 @@ const Footer = () => {
             <div className="flex flex-col md:flex-row justify-between items-center">
               <p className="text-gray-400 text-sm mb-1 md:mb-0">© 2025 QuizFun. Tất cả các quyền được bảo lưu.</p>
               <div className="flex space-x-6">
-                <span className="text-gray-400 text-sm">contact@quizfun.com</span>
+                <span className="text-gray-400 text-sm">quizzfun93@gmail.com</span>
               </div>
             </div>
           </div>
