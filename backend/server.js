@@ -320,7 +320,8 @@ app.get('/api/quizzes/:id/questions', async (req, res) => {
     id: question.id,
     question: question.content,
     questionImage: questionImageUrl, // ← SỬA: Đảm bảo có URL đúng
-    type: question.type,
+    type: question.type || 'single_choice', // ← ĐẢM BẢO có type
+
     order: question.order,
     answers: answersGrouped[question.id] || []
   };
@@ -438,32 +439,46 @@ for (const userAnswer of answers) {
     ? userAnswer.selectedAnswers 
     : [userAnswer.selectedAnswers];
 
-  // Tìm đáp án được chọn
-  const selectedAnswer = question.answers.find(a => userAnswerIds.includes(a.id));
-
-  // ← SỬA: Xử lý HOÀN TOÀN riêng biệt cho từng loại quiz
+  // Xử lý riêng biệt cho từng loại quiz
   if (quiz.quiz_type === 'iq') {
-    // CHỈ xử lý IQ quiz ở đây
+    // IQ Quiz: Tính điểm dựa trên đáp án đúng
     const correctAnswerIds = question.answers
       .filter(a => a.is_correct)
       .map(a => a.id);
 
-    const correctAnswer = question.answers.find(a => a.is_correct);
+    // ← SỬA: Đổi tên biến để tránh conflict
+    const selectedAnswerObjs = question.answers.filter(a => userAnswerIds.includes(a.id));
+    const correctAnswerObjs = question.answers.filter(a => a.is_correct);
+    
+    // Tạo text hiển thị
+    const selectedAnswerText = selectedAnswerObjs.map(a => a.content).join(', ') || 'Không chọn';
+    const correctAnswerText = correctAnswerObjs.map(a => a.content).join(', ') || 'N/A';
 
-    const isCorrect = correctAnswerIds.length === userAnswerIds.length &&
-      correctAnswerIds.every(id => userAnswerIds.includes(id));
+    // Logic tính điểm
+    let isCorrect = false;
+    
+    if (question.type === 'multi_choice') {
+      // Multi-choice: Phải chọn ĐÚNG TẤT CẢ đáp án đúng, không chọn thừa
+      isCorrect = correctAnswerIds.length === userAnswerIds.length &&
+        correctAnswerIds.every(id => userAnswerIds.includes(id)) &&
+        userAnswerIds.every(id => correctAnswerIds.includes(id));
+    } else {
+      // Single-choice: Logic cũ
+      isCorrect = correctAnswerIds.length === userAnswerIds.length &&
+        correctAnswerIds.every(id => userAnswerIds.includes(id));
+    }
 
     if (isCorrect) {
       score++;
-      correctAnswers++;
+      correctAnswers++; // ← SỬA: Dùng biến đã khai báo ở đầu
     }
 
-    // Tạo chi tiết cho IQ quiz
+    // Tạo chi tiết với text đúng
     detailedResults.push({
       questionId: question.id,
       questionContent: userAnswer.questionContent || question.content,
-      selectedAnswer: selectedAnswer?.content || 'Không chọn',
-      correctAnswer: correctAnswer?.content || 'N/A',
+      selectedAnswer: selectedAnswerText,
+      correctAnswer: correctAnswerText,
       isCorrect: isCorrect,
       options: question.answers || []
     });
@@ -485,7 +500,7 @@ for (const userAnswer of answers) {
     }
 
   } else if (quiz.quiz_type === 'personality') {
-    // CHỈ xử lý Personality quiz ở đây - KHÔNG tính score
+    // Personality quiz logic giữ nguyên
     question.answers.forEach(answer => {
       if (userAnswerIds.includes(answer.id)) {
         const personality = answer.is_personality;
@@ -495,7 +510,7 @@ for (const userAnswer of answers) {
       }
     });
 
-    // Lưu user_answers cho personality quiz - TẤT CẢ đều "đúng"
+    // Lưu user_answers cho personality quiz
     for (const selectedAnswerId of userAnswerIds) {
       await supabase
         .from('user_answers')
@@ -503,12 +518,13 @@ for (const userAnswer of answers) {
           user_quiz_id: userQuiz.id,
           question_id: question.id,
           answer_id: selectedAnswerId,
-          is_correct: true, // Personality quiz không có đúng/sai
+          is_correct: true,
           finished_at: new Date().toISOString()
         }]);
     }
   }
 }
+
 
 // ← SỬA: Tính kết quả cuối cùng HOÀN TOÀN riêng biệt
 if (quiz.quiz_type === 'personality') {

@@ -151,10 +151,19 @@ const uploadQuestionImage = async (file) => {
   };
 
   const updateAnswer = (questionIndex, answerIndex, field, value) => {
-    const newQuestions = [...questions];
-    newQuestions[questionIndex].answers[answerIndex][field] = value;
-    setQuestions(newQuestions);
-  };
+  const newQuestions = [...questions];
+  newQuestions[questionIndex].answers[answerIndex][field] = value;
+  
+  // ← THÊM: Auto-detect question type dựa trên số đáp án đúng
+  if (field === 'isCorrect') {
+    const correctCount = newQuestions[questionIndex].answers.filter(a => a.isCorrect).length;
+    newQuestions[questionIndex].type = correctCount > 1 ? 'multi_choice' : 'single_choice';
+    
+    console.log(`Question ${questionIndex + 1}: ${correctCount} correct answers -> ${newQuestions[questionIndex].type}`);
+  }
+  
+  setQuestions(newQuestions);
+};
 
   const removeQuestion = (index) => {
     setQuestions(questions.filter((_, i) => i !== index));
@@ -375,10 +384,20 @@ const uploadQuestionImage = async (file) => {
                 </button>
               </div>
 
-             {questions.map((question, qIndex) => (
+            {questions.map((question, qIndex) => (
   <div key={qIndex} className="border border-gray-200 rounded-lg p-4 mb-4">
     <div className="flex justify-between items-center mb-2">
-      <h5 className="font-medium">Câu hỏi {qIndex + 1}</h5>
+      <div className="flex items-center space-x-2">
+        <h5 className="font-medium">Câu hỏi {qIndex + 1}</h5>
+        {/* ← THÊM: Hiển thị loại câu hỏi */}
+        <span className={`px-2 py-1 text-xs rounded ${
+          question.type === 'multi_choice' 
+            ? 'bg-blue-100 text-blue-800' 
+            : 'bg-green-100 text-green-800'
+        }`}>
+          {question.type === 'multi_choice' ? 'Nhiều đáp án' : 'Một đáp án'}
+        </span>
+      </div>
       <button
         type="button"
         onClick={() => removeQuestion(qIndex)}
