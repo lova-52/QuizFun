@@ -139,28 +139,26 @@ function QuizzTake() {
   const handleSubmit = async () => {
     try {
       // ← SỬA: Thêm chi tiết câu hỏi và đáp án để gửi lên server
-      const submitData = {
-        answers: Object.keys(answers).map(questionId => {
-          const question = questions.find(q => q.id === parseInt(questionId));
-          const selectedAnswerIds = answers[questionId] || [];
-
-          return {
-            questionId: parseInt(questionId),
-            selectedAnswers: selectedAnswerIds,
-            // ← THÊM: Chi tiết câu hỏi để hiển thị trong kết quả
-            questionContent: question?.question || '',
-            questionOptions: question?.answers || [],
-            selectedAnswerTexts: selectedAnswerIds.map(answerId =>
-              question?.answers?.find(opt => opt.id === answerId)?.content || ''
-            )
-          };
-        }),
-        timeSpent: (quiz.timeLimit * 60) - timeLeft,
-        userId: user ? user.id : null,
-        // ← THÊM: Thông tin quiz để xử lý kết quả
-        quizType: quiz.quiz_type || quiz.type,
-        totalQuestions: questions.length
-      };
+     const submitData = {
+  answers: Object.keys(answers).map(questionId => {
+    const question = questions.find(q => q.id === parseInt(questionId));
+    const selectedAnswerIds = answers[questionId] || [];
+    
+    return {
+      questionId: parseInt(questionId),
+      selectedAnswers: selectedAnswerIds,
+      questionContent: question?.question || question?.content || '', // ← SỬA: Đảm bảo có content
+      questionOptions: question?.answers || [],
+      selectedAnswerTexts: selectedAnswerIds.map(answerId => 
+        question?.answers?.find(opt => opt.id === answerId)?.content || ''
+      )
+    };
+  }),
+  timeSpent: (quiz.timeLimit * 60) - timeLeft,
+  userId: user ? user.id : null,
+  quizType: quiz.quiz_type || quiz.type,
+  totalQuestions: questions.length
+};
 
       console.log('Submit data:', submitData); // Debug
 
@@ -500,39 +498,43 @@ function QuizzTake() {
               <div className="p-4 md:p-6">
                 <div className="space-y-3">
                   {currentQ.answers.map((answer) => (
-                    <button
-                      key={answer.id}
-                      onClick={() => handleAnswerSelect(currentQ.id, answer.id, isMultiChoice)}
-                      className={`w-full text-left p-3 md:p-4 rounded-lg border-2 transition-all ${isAnswerSelected(currentQ.id, answer.id)
-                          ? 'border-primary bg-primary bg-opacity-5 text-primary'
-                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                        }`}
-                    >
-                      <div className="flex items-start">
-                        <div className={`w-5 h-5 mr-3 mt-0.5 flex items-center justify-center flex-shrink-0 ${isMultiChoice
-                            ? `rounded border-2 ${isAnswerSelected(currentQ.id, answer.id)
-                              ? 'border-primary bg-primary'
-                              : 'border-gray-300'
-                            }`
-                            : `rounded-full border-2 ${isAnswerSelected(currentQ.id, answer.id)
-                              ? 'border-primary bg-primary'
-                              : 'border-gray-300'
-                            }`
-                          }`}>
-                          {isAnswerSelected(currentQ.id, answer.id) && (
-                            isMultiChoice ? (
-                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            ) : (
-                              <div className="w-2 h-2 bg-white rounded-full"></div>
-                            )
-                          )}
-                        </div>
-                        <span className="text-gray-700 text-sm md:text-base leading-relaxed">{answer.content}</span>
-                      </div>
-                    </button>
-                  ))}
+  <button
+    key={answer.id}
+    onClick={() => handleAnswerSelect(currentQ.id, answer.id, currentQ.type === 'multi_choice')} // ← SỬA: Dùng currentQ.type
+    className={`w-full text-left p-3 md:p-4 rounded-lg border-2 transition-all ${
+      isAnswerSelected(currentQ.id, answer.id)
+        ? 'border-primary bg-primary bg-opacity-5 text-primary'
+        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+    }`}
+  >
+    <div className="flex items-start">
+      <div className={`w-5 h-5 mr-3 mt-0.5 flex items-center justify-center flex-shrink-0 ${
+        currentQ.type === 'multi_choice' // ← SỬA: Dùng currentQ.type thay vì isMultiChoice
+          ? `rounded border-2 ${
+              isAnswerSelected(currentQ.id, answer.id)
+                ? 'border-primary bg-primary'
+                : 'border-gray-300'
+            }`
+          : `rounded-full border-2 ${
+              isAnswerSelected(currentQ.id, answer.id)
+                ? 'border-primary bg-primary'
+                : 'border-gray-300'
+            }`
+      }`}>
+        {isAnswerSelected(currentQ.id, answer.id) && (
+          currentQ.type === 'multi_choice' ? ( // ← SỬA: Dùng currentQ.type
+            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+          ) : (
+            <div className="w-2 h-2 bg-white rounded-full"></div>
+          )
+        )}
+      </div>
+      <span className="text-gray-700 text-sm md:text-base leading-relaxed">{answer.content}</span>
+    </div>
+  </button>
+))}
                 </div>
               </div>
 
