@@ -4,6 +4,30 @@ import bodyParser from 'body-parser';
 import bcrypt from 'bcrypt';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
+// Import multer để xử lý file upload
+import multer from 'multer';
+import path from 'path';
+// Configure multer for file upload 
+const storage = multer.memoryStorage();
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Chỉ chấp nhận file hình ảnh (jpeg, jpg, png, gif, webp)'));
+    }
+  }
+});
+
+
 
 dotenv.config();
 
@@ -686,10 +710,65 @@ app.delete('/api/admin/quizzes/:id', async (req, res) => {
   }
 });
 
+// API upload hình ảnh quiz 
+app.post('/api/admin/quizzes/upload-image', upload.single('quizImage'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Không có file được upload'
+      });
+    }
+
+    const file = req.file;
+    const fileName = `quiz-${Date.now()}-${file.originalname}`;
+    const filePath = `quiz-images/${fileName}`;
+
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from('project-bucket')
+      .upload(filePath, file.buffer, {
+        contentType: file.mimetype,
+        upsert: false
+      });
+
+    if (error) {
+      console.error('Lỗi upload Supabase:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Lỗi upload hình ảnh'
+      });
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from('project-bucket')
+      .getPublicUrl(filePath);
+
+    return res.json({
+      success: true,
+      data: {
+        fileName: fileName,
+        filePath: filePath,
+        imageUrl: urlData.publicUrl
+      }
+    });
+
+  } catch (error) {
+    console.error('Lỗi upload:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Lỗi server'
+    });
+  }
+});
+
+
 // API tạo quiz mới
 app.post('/api/admin/quizzes', async (req, res) => {
   try {
-    const { title, description, categoryId, timeLimit, quizType, questions } = req.body;
+    const { title, description, categoryId, timeLimit, quizType, questions, imageUrl } = req.body;
+
 
     if (!title || !description || !categoryId || !questions || questions.length === 0) {
       return res.status(400).json({ 
@@ -707,7 +786,9 @@ app.post('/api/admin/quizzes', async (req, res) => {
         category_id: categoryId,
         time_limit: timeLimit || 0,
         quiz_type: quizType || 'iq',
-        total_questions: questions.length
+        total_questions: questions.length,
+        image_url: imageUrl || null  // ← THÊM DÒNG NÀY
+
       }])
       .select()
       .single();
