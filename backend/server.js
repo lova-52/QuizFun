@@ -1229,6 +1229,156 @@ app.get('/api/admin/users/:id/statistics', async (req, res) => {
   }
 });
 
+// API lấy thông tin profile user
+app.get('/api/users/:id/profile', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const { data: user, error: userError } = await supabase
+      .from('user')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (userError || !user) {
+      return res.status(404).json({ success: false, message: 'User không tồn tại' });
+    }
+
+    // Lấy thống kê quiz
+    const { data: quizStats } = await supabase
+      .from('user_quizzes')
+      .select('result')
+      .eq('user_id', id);
+
+    const totalQuizzes = quizStats?.length || 0;
+    const completedQuizzes = quizStats?.filter(q => q.result).length || 0;
+
+    return res.json({
+      success: true,
+      data: {
+        ...user,
+        totalQuizzes,
+        completedQuizzes,
+        avgScore: 0 // Tính sau nếu cần
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
+// API lấy quiz history của user
+app.get('/api/users/:id/quizzes', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const { data: userQuizzes, error } = await supabase
+      .from('user_quizzes')
+      .select(`
+        *,
+        quizzes (
+          id,
+          title,
+          categories (name)
+        )
+      `)
+      .eq('user_id', id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      return res.status(500).json({ success: false, message: 'Lỗi lấy dữ liệu' });
+    }
+
+    const formattedQuizzes = userQuizzes.map(uq => ({
+      quiz_id: uq.quiz_id,
+      quiz_title: uq.quizzes?.title || 'Unknown',
+      quiz_category: uq.quizzes?.categories?.name || 'Unknown',
+      quiz_type: uq.quiz_type,
+      result: uq.result,
+      created_at: uq.created_at
+    }));
+
+    return res.json({
+      success: true,
+      data: formattedQuizzes
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
+
+
+// API đổi mật khẩu user (đã fix bcrypt)
+app.put('/api/users/:id/change-password', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập đầy đủ thông tin'
+      });
+    }
+
+    // Lấy thông tin user hiện tại
+    const { data: user, error: userError } = await supabase
+      .from('user')
+      .select('password_hash')
+      .eq('id', id)
+      .single();
+
+    if (userError || !user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy người dùng'
+      });
+    }
+
+    // Kiểm tra mật khẩu hiện tại với bcrypt
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password_hash);
+    
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mật khẩu hiện tại không đúng'
+      });
+    }
+
+    // Hash mật khẩu mới với bcrypt
+    const saltRounds = 12; // Giống với database hiện tại
+    const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Cập nhật mật khẩu mới đã hash
+    const { error: updateError } = await supabase
+      .from('user')
+      .update({ password_hash: hashedNewPassword })
+      .eq('id', id);
+
+    if (updateError) {
+      console.error('Lỗi cập nhật mật khẩu:', updateError);
+      return res.status(500).json({
+        success: false,
+        message: 'Cập nhật mật khẩu thất bại'
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Đổi mật khẩu thành công'
+    });
+
+  } catch (error) {
+    console.error('Lỗi không mong muốn:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Lỗi server'
+    });
+  }
+});
+
+
 
 app.listen(PORT, () => {
   console.log(`Backend chạy tại http://localhost:${PORT}`);

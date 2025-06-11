@@ -12,10 +12,13 @@ import UserList from './components/Pages/Admin/UserList';
 import Layout from './components/Layout/layout';
 
 import AdminDashboard from './components/Pages/Admin/AdminDashboard';
-import QuizManagement from './components/Pages/Admin/QuizManagement'; // ← THÊM DÒNG NÀY
+import QuizManagement from './components/Pages/Admin/QuizManagement';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginModal from './components/Auth/LoginModal';
 import { AuthProvider } from './context/AuthContext';
+
+import Profile from './components/Pages/Profile';
+import MyQuizzes from './components/Pages/MyQuizzes';
 
 const App = () => {
   return (
@@ -91,7 +94,6 @@ const App = () => {
             }
           />
 
-          {/* ← THÊM ROUTE NÀY */}
           <Route
             path="/admin/quizzes"
             element={
@@ -102,6 +104,20 @@ const App = () => {
               </ProtectedRoute>
             }
           />
+
+          {/* ← SỬA CÁC ROUTE NÀY */}
+          <Route path="/profile" element={
+            <Layout>
+              <Profile />
+            </Layout>
+          } />
+
+          <Route path="/my-quizzes" element={
+            <Layout>
+              <MyQuizzes />
+            </Layout>
+          } />
+
         </Routes>
       </Router>
     </AuthProvider>
