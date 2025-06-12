@@ -11,9 +11,10 @@ function FilterSidebar({
 }) {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [error, setError] = useState('');
   const inputRef = useRef();
 
-  // Kiểm tra input có hợp lệ không
+  // Regex kiểm tra input hợp lệ (cho phép chữ unicode, số, khoảng trắng, dấu - và ')
   const isValidInput = (input) => /^[\p{L}0-9\s'-]{0,100}$/u.test(input.trim());
 
   useEffect(() => {
@@ -24,34 +25,44 @@ function FilterSidebar({
         .filter(q =>
           q.title.toLowerCase().includes(trimmedTerm.toLowerCase())
         )
-        .slice(0, 5); // giới hạn số lượng gợi ý
+        .slice(0, 5);
       setSuggestions(matches);
+      setShowSuggestions(true); // Tự động bật khi có gợi ý
+      setError('');
     } else {
       setSuggestions([]);
+      setShowSuggestions(false); // Tắt khi không hợp lệ hoặc trống
+      if(trimmedTerm !== '') setError('Chuỗi tìm kiếm không hợp lệ');
+      else setError('');
     }
   }, [searchTerm, quizzes]);
 
   const handleInputChange = (e) => {
-    const value = e.target.value;
-    if (value === '' || isValidInput(value)) {
-      setSearchTerm(value);
-    }
+    setSearchTerm(e.target.value);
+    setError(''); // Xóa lỗi khi user đang nhập lại
   };
 
   const handleSuggestionClick = (title) => {
     setSearchTerm(title.trim());
     setShowSuggestions(false);
     inputRef.current.blur(); // tắt focus khỏi input
-  };
-
-  const handleInputFocus = () => {
-    if (suggestions.length > 0) {
-      setShowSuggestions(true);
-    }
+    setError('');
   };
 
   const handleInputBlur = () => {
     setTimeout(() => setShowSuggestions(false), 100); // delay để click suggestion không bị mất
+  };
+
+  // Hàm gọi khi user muốn submit tìm kiếm, vd khi bấm nút hoặc enter
+  const handleSearchSubmit = () => {
+    if (!isValidInput(searchTerm)) {
+      setError('Chuỗi tìm kiếm không hợp lệ. Vui lòng kiểm tra lại.');
+      return false;
+    }
+    setError('');
+    // Thực hiện hành động tìm kiếm hoặc filter ở đây nếu cần
+    // vd: call API, hoặc set filter...
+    return true;
   };
 
   return (
@@ -68,9 +79,10 @@ function FilterSidebar({
             placeholder="Tìm kiếm quiz..."
             value={searchTerm}
             onChange={handleInputChange}
-            onFocus={handleInputFocus}
             onBlur={handleInputBlur}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            className={`w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${
+              error ? 'border-red-500' : 'border-gray-300'
+            }`}
           />
           <svg 
             className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" 
@@ -82,7 +94,10 @@ function FilterSidebar({
           </svg>
           {searchTerm && (
             <button
-              onClick={() => setSearchTerm('')}
+              onClick={() => {
+                setSearchTerm('');
+                setError('');
+              }}
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -91,6 +106,11 @@ function FilterSidebar({
             </button>
           )}
         </div>
+
+        {/* Hiển thị lỗi nếu có */}
+        {error && (
+          <p className="mt-1 text-xs text-red-600">{error}</p>
+        )}
 
         {/* Gợi ý tìm kiếm */}
         {showSuggestions && (
@@ -111,6 +131,14 @@ function FilterSidebar({
           </ul>
         )}
       </div>
+
+      {/* Nút submit tìm kiếm */}
+      <button
+        onClick={handleSearchSubmit}
+        className="mb-6 w-full bg-primary text-white py-2 rounded-lg text-sm hover:bg-primary-dark transition"
+      >
+        Tìm kiếm
+      </button>
 
       {/* Sắp xếp */}
       <div className="mb-6">
