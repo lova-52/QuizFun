@@ -27,7 +27,7 @@ const AddQuizModal = ({ onClose, onAdd }) => {
       .catch(console.error);
   }, []);
 
-  // ← THÊM FUNCTION XỬ LÝ UPLOAD HÌNH ẢNH
+  // THÊM FUNCTION XỬ LÝ UPLOAD HÌNH ẢNH
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
