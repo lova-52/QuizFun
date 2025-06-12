@@ -38,26 +38,64 @@ function QuizResult() {
   console.log("isPersonalityQuiz:", isPersonalityQuiz);
   console.log("personalityType:", personalityType);
   console.log("score:", score);
-
   useEffect(() => {
-    // Mock data quiz
     const mockQuiz = {
       id: quizId,
       title: quizTitle,
       questions: []
     };
 
-    // Logic chính để tính toán kết quả
-    const calculateResult = () => {
-      console.log("calculateResult - quizType:", quizType);
-      console.log("calculateResult - personalityType:", personalityType);
+    const fetchPersonalityDescription = async (typeKey) => {
+      try {
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": "Bearer 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", 
+            "X-Title": "Quiz App",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "deepseek/deepseek-r1-0528:free",
+            messages: [
+              {
+                role: "user",
+                content: `Viết đoạn văn mô tả về tính cách "${typeKey}" bằng tiếng Việt trong 3 câu (không dùng dấu * gạch đầu dòng và đánh số).`
+              }
+            ]
+          })
+        });
 
-      if (quizType === "personality" || isPersonalityQuiz) {
-        return calculatePersonalityResult();
-      } else if (quizType === "iq") {
-        return calculateIQResult();
+        const data = await response.json();
+        const generated = data?.choices?.[0]?.message?.content?.trim() || '';
+        return generated;
+      } catch (err) {
+        console.error("Lỗi khi gọi DeepSeek API:", err);
+        return 'Không thể tạo mô tả từ AI. Dùng mô tả mặc định.';
       }
-      return null;
+    };
+
+    const calculatePersonalityResult = async () => {
+      const personalityTypes = {
+        extrovert: { label: 'Hướng ngoại', key: 'extrovert' },
+        introvert: { label: 'Hướng nội', key: 'introvert' },
+        thinking: { label: 'Lý trí', key: 'thinking' },
+        feeling: { label: 'Cảm xúc', key: 'feeling' },
+        sensing: { label: 'Cảm nhận', key: 'sensing' },
+        intuition: { label: 'Trực giác', key: 'intuition' },
+        balanced: { label: 'Cân bằng', key: 'balanced' }
+      };
+
+      const typeData = personalityTypes[personalityType] || personalityTypes.balanced;
+      const aiDescription = await fetchPersonalityDescription(typeData.label);
+
+      return {
+        personalityType: {
+          ...typeData,
+          description: aiDescription || 'Không có mô tả AI'
+        },
+        score: null,
+        breakdown: {}
+      };
     };
 
     const calculateIQResult = () => {
@@ -66,71 +104,34 @@ function QuizResult() {
       return {
         personalityType: {
           label: "IQ Quiz",
-          description: `Bạn đã trả lời đúng ${correctAnswers || Math.round((score / 100) * totalQuestions)} / ${totalQuestions} câu hỏi.`,
+          description: `Bạn đã trả lời đúng ${correctAnswers || Math.round((score / 100) * totalQuestions)} / ${totalQuestions} câu hỏi.`
         },
         score: score,
         correctAnswers: correctAnswers || Math.round((score / 100) * totalQuestions),
         wrongAnswers: totalQuestions - (correctAnswers || Math.round((score / 100) * totalQuestions)),
-        breakdown: {},
-      };
-    };
-
-    const calculatePersonalityResult = () => {
-      console.log("Calculating personality result for:", personalityType);
-
-      const personalityTypes = {
-        extrovert: {
-          label: 'Hướng ngoại',
-          description: 'Bạn là người năng động, thích giao tiếp và làm việc với nhiều người.',
-          key: 'extrovert'
-        },
-        introvert: {
-          label: 'Hướng nội',
-          description: 'Bạn là người thích suy ngẫm, làm việc độc lập và cần thời gian riêng.',
-          key: 'introvert'
-        },
-        thinking: {
-          label: 'Lý trí',
-          description: 'Bạn đưa ra quyết định dựa trên logic và phân tích khách quan.',
-          key: 'thinking'
-        },
-        feeling: {
-          label: 'Cảm xúc',
-          description: 'Bạn quyết định dựa trên cảm xúc và tác động đến con người.',
-          key: 'feeling'
-        },
-        sensing: {
-          label: 'Cảm nhận',
-          description: 'Bạn tập trung vào thực tế và chi tiết cụ thể.',
-          key: 'sensing'
-        },
-        intuition: {
-          label: 'Trực giác',
-          description: 'Bạn thích khám phá khả năng và ý tưởng mới.',
-          key: 'intuition'
-        },
-        balanced: {
-          label: 'Cân bằng',
-          description: 'Bạn có sự cân bằng giữa các đặc điểm tính cách.',
-          key: 'balanced'
-        }
-      };
-
-      const typeData = personalityTypes[personalityType] || personalityTypes.balanced;
-
-      return {
-        personalityType: typeData,
-        score: null, // Không có score cho personality
         breakdown: {}
       };
     };
 
-    setTimeout(() => {
+    const calculateResult = async () => {
+      if (quizType === "personality" || isPersonalityQuiz) {
+        return await calculatePersonalityResult();
+      } else if (quizType === "iq") {
+        return calculateIQResult();
+      }
+      return null;
+    };
+
+    const loadData = async () => {
       setQuiz(mockQuiz);
-      setResult(calculateResult());
+      const resultData = await calculateResult();
+      setResult(resultData);
       setLoading(false);
-    }, 1000);
+    };
+
+    loadData();
   }, [quizId, personalityType, score, quizType, quizTitle, totalQuestions, correctAnswers, isPersonalityQuiz]);
+
 
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
@@ -443,14 +444,18 @@ function QuizResult() {
             </span>
           </div>
 
-          <h2 className="text-xl font-bold text-gray-800 mb-2">
-            {(quizType === 'personality' || isPersonalityQuiz) && personalityType && personalityType !== 'balanced'
-              ? `Nhóm tính cách: ${result?.personalityType?.label || personalityType}`
-              : quizType === 'iq'
-                ? `Điểm của bạn: ${result?.score || 0}`
-                : `Nhóm tính cách: ${result?.personalityType?.label || 'Không xác định'}`
-            }
-          </h2>
+          {quizType === 'iq' && (
+            <h2 className="text-xl font-bold text-gray-800 mb-2">
+              Điểm của bạn: {result?.score || 0}
+            </h2>
+          )}
+
+          {(quizType === 'personality' || isPersonalityQuiz) && (
+            <h2 className="text-xl font-bold text-gray-800 mb-2">
+              Nhóm tính cách: {result?.personalityType?.label || personalityType}
+            </h2>
+          )}
+
 
           <p className="text-gray-600 leading-relaxed max-w-xl mx-auto text-sm">
             {result?.personalityType?.description || 'Không có mô tả'}
