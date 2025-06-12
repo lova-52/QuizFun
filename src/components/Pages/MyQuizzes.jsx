@@ -34,17 +34,22 @@ const MyQuizzes = () => {
   });
 
   const formatResult = (result) => {
-    if (!result) return 'Chưa hoàn thành';
-    try {
-      const parsed = typeof result === 'string' ? JSON.parse(result) : result;
-      if (parsed.score !== undefined) {
-        return `${parsed.score}%`;
-      }
-      return result;
-    } catch {
-      return result;
+  if (!result) return 'Chưa hoàn thành';
+  try {
+    const parsed = typeof result === 'string' ? JSON.parse(result) : result;
+
+    if (parsed.score !== undefined) {
+      return `${parsed.score}%`;
+    } else if (parsed.personalityType) {
+      return parsed.personalityType;
     }
-  };
+
+    return 'Không xác định';
+  } catch {
+    return 'Lỗi định dạng kết quả';
+  }
+};
+
 
   if (loading) return <div className="text-center py-8">Đang tải...</div>;
 

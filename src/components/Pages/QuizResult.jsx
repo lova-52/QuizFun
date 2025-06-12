@@ -59,7 +59,7 @@ function QuizResult() {
             messages: [
               {
                 role: "user",
-                content: `Viết đoạn văn mô tả về tính cách "${typeKey}" bằng tiếng Việt trong 3 câu (không dùng dấu * gạch đầu dòng và đánh số).`
+                content: `Viết đoạn mô tả về tính cách "${typeKey}" bằng tiếng Việt trong 2 câu (không dùng dấu * gạch đầu dòng và đánh số).`
               }
             ]
           })
